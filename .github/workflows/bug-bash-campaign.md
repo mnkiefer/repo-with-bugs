@@ -20,8 +20,13 @@ permissions:
 
 safe-outputs:
   update-project:
-    github-token: ${{ secrets.PROJECT_GITHUB_TOKEN }}
+    github-token: ${{ secrets.PROJECT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
     max: 15
+  create-issue:
+    title-prefix: "[bug-bash] Weekly Sprint - "
+    labels: [bug-bash, campaign, automation]
+    assignees: copilot
+    max: 1
 
 tools:
   github:
