@@ -4071,7 +4071,12 @@ jobs:
                   }`,
                   { owner, repo }
                 );
-                const existingProject = existingProjectsResult.repository.projectsV2.nodes.find(
+                const availableProjects = existingProjectsResult.repository.projectsV2.nodes;
+                core.info(`Found ${availableProjects.length} linked projects`);
+                availableProjects.forEach(p => {
+                  core.info(`  - "${p.title}" (#${p.number})`);
+                });
+                const existingProject = availableProjects.find(
                   p => p.title === output.project || p.number.toString() === output.project.toString()
                 );
                 if (existingProject) {
