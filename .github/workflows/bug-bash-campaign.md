@@ -1,5 +1,5 @@
 ---
-name: Bug Bash Campaign
+name: Weekly Bug Bash Campaign
 on:
   schedule:
     - cron: "0 10 * * 1"
@@ -39,7 +39,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
 ## Steps
 
-1. Calculate the current project name using the format "Bug Bash YYYY WNN" where YYYY is the current year and WNN is the ISO week number (e.g., "Bug Bash 2025 W46"). Use this as the project name for all `update-project` safe outputs unless `project_url` input overrides it.
+1. Calculate the current project name using the format "Bug Bash YYYY - WNN" where YYYY is the current year and WNN is the ISO week number with leading zero (e.g., "Bug Bash 2025 - W46" for week 46). Use this as the project name for all `update-project` safe outputs unless `project_url` input overrides it. The project must already exist - do not attempt to create it.
 2. Use the GitHub MCP server tools (issues toolset) to fetch recent open issues (last 30 days) that have at least one of these labels: `bug`, `defect`, or `regression`. Filter out:
    - Issues already on the board
    - Closed issues
@@ -96,7 +96,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 ```json
 {
   "type": "update-project",
-  "project": "Bug Bash 2025 W46",
+  "project": "Bug Bash 2025 - W46",
   "content_type": "issue",
   "content_number": 123,
   "fields": {
@@ -115,7 +115,7 @@ Note: The `Classification` field is the concatenated string `Priority|Impact|Com
 ````markdown
 # Bug Bash Weekly Campaign Summary
 
-**Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025 W46)
+**Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025-W46)
 **Scanned**: <SCANNED_COUNT> | **Added**: <ADDED_COUNT> | **Skipped**: <SKIPPED_COUNT>
 
 ## Priority Distribution
