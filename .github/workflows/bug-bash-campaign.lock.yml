@@ -4382,9 +4382,6 @@ jobs:
                   ? ownerProjectsResult.user.projectsV2.nodes
                   : ownerProjectsResult.organization.projectsV2.nodes;
                 core.info(`Found ${ownerProjects.length} ${ownerType.toLowerCase()} projects`);
-                ownerProjects.forEach(p => {
-                  core.info(`  - "${p.title}" (#${p.number})`);
-                });
                 existingProject = ownerProjects.find(
                   p => p.title === output.project || p.number.toString() === output.project.toString()
                 );
@@ -4505,7 +4502,7 @@ jobs:
                     ? contentResult.repository.issue.id
                     : contentResult.repository.pullRequest.id;
                   const existingItemsResult = await githubClient.graphql(
-                    `query($projectId: ID!, $contentId: ID!) {
+                    `query($projectId: ID!) {
                       node(id: $projectId) {
                         ... on ProjectV2 {
                           items(first: 100) {
@@ -4524,7 +4521,7 @@ jobs:
                         }
                       }
                     }`,
-                    { projectId, contentId }
+                    { projectId }
                   );
                   const existingItem = existingItemsResult.node.items.nodes.find(
                     item => item.content && item.content.id === contentId
