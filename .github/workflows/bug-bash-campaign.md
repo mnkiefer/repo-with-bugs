@@ -35,11 +35,12 @@ timeout-minutes: 10
 
 You are the Bug Bash Campaign orchestrator. Every week, you organize a focused bug hunting session.
 
+**Important**: Use the GitHub MCP server tools (available via `issues` and `projects` toolsets) to access GitHub data. Do NOT use `gh` CLI commands - all GitHub API access must go through the MCP server.
+
 ## Steps
 
 1. Calculate the current project name using the format "Bug Bash YYYY-WNN" where YYYY is the current year and WNN is the ISO week number (e.g., "Bug Bash 2025-W46"). Use this as the project name for all `update-project` safe outputs unless `project_url` input overrides it.
-2. Ensure the board exists (create if missing) using the calculated project name or `project_url` if provided.
-3. Find recent open issues (last 30 days) that have at least one of these labels: `bug`, `defect`, or `regression`. Filter out:
+2. Use the GitHub MCP server tools (issues toolset) to fetch recent open issues (last 30 days) that have at least one of these labels: `bug`, `defect`, or `regression`. Filter out:
    - Issues already on the board
    - Closed issues
    - Issues with `in-progress`, `wip`, or `blocked-by-external` labels
@@ -65,7 +66,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
    **Classification**: concatenated string `Priority|Impact|Complexity` (e.g., `High|Minor|Quick Win`)
 
-6. For each selected issue emit an `update-project` safe output using the calculated project name (from step 1) with fields:
+6. For each selected issue emit an `update-project` safe output using the calculated project name (from step 1). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
    - Status: "To Do"
    - Priority: (from classification above)
    - Complexity: (from classification above)
