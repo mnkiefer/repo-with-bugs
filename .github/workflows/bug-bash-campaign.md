@@ -14,7 +14,6 @@ engine: copilot
 
 permissions:
   contents: read
-  issues: write
   pull-requests: read
 
 safe-outputs:
@@ -121,7 +120,7 @@ Note: The `Classification` field is the concatenated string `Priority|Impact|Com
 ````markdown
 # Bug Bash Weekly Campaign Summary
 
-**Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025-W46)
+**Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025 - W46)
 **Scanned**: <SCANNED_COUNT> | **Added**: <ADDED_COUNT> | **Skipped**: <SKIPPED_COUNT>
 
 ## Priority Distribution
