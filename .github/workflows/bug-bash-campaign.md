@@ -22,11 +22,6 @@ safe-outputs:
   update-project:
     github-token: ${{ secrets.PROJECT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
     max: 15
-  create-issue:
-    title-prefix: "[bug-bash] Weekly Campaign - "
-    labels: [bug-bash, campaign, automation]
-    assignees: copilot
-    max: 1
 
 tools:
   github:
@@ -77,11 +72,13 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
    - Impact: (from classification above)
    - Classification: (concatenated string from above)
 7. Limit additions to `max` (15) in safe-outputs.
-8. Create one summary issue with:
+8. Log a summary to the workflow step summary with:
+   - Project name used
    - Count scanned vs added vs skipped
    - Priority distribution (Critical / High / Medium)
    - Top 10 candidates (markdown table) sorted by Priority then Impact
    - Quick Wins count (Complexity="Quick Win")
+   - Any permission or configuration issues encountered
 
 ## Guardrails
 - **Required label**: Issue MUST have at least one of: `bug`, `defect`, or `regression`
@@ -113,9 +110,9 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
 Note: The `Classification` field is the concatenated string `Priority|Impact|Complexity` for easy sorting and filtering.
 
-## Summary Issue Body Template (Internal Use)
+## Summary Template (Log to Step Summary)
 ````markdown
-# Bug Bash Weekly Summary
+# Bug Bash Weekly Campaign Summary
 
 **Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025-W46)
 **Scanned**: <SCANNED_COUNT> | **Added**: <ADDED_COUNT> | **Skipped**: <SKIPPED_COUNT>
@@ -133,8 +130,8 @@ Note: The `Classification` field is the concatenated string `Priority|Impact|Com
 ## Quick Wins (<N>)
 <Comma separated issue numbers or 'None'>
 
-## Notes
-- Missing permissions: <YES/NO>
+## Configuration
 - Project URL: ${{ inputs.project_url }} (or calculated from date)
 - Lookback days: 30
+- Token scope issues: <YES/NO if encountered>
 ````
