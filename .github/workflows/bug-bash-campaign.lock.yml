@@ -1343,7 +1343,7 @@ jobs:
           ## Steps
           
           1. **Determine the project to use:**
-             - If `${GH_AW_EXPR_E6A2FDC7}` is provided, use that project URL directly in all `update-project` safe outputs
+             - If `${GH_AW_EXPR_E6A2FDC7}` is provided, use that exact URL in all `update-project` safe outputs
              - Otherwise, calculate the project name using the format "Bug Bash YYYY - WNN" where YYYY is the current year and WNN is the ISO week number with leading zero (e.g., "Bug Bash 2025 - W46" for week 46)
              - **CRITICAL**: The format must have spaces around the dash: "Bug Bash 2025 - W46" (not "Bug Bash 2025-W46")
              - The project must already exist - do not attempt to create it. Only add items to existing projects.
@@ -1415,6 +1415,8 @@ jobs:
             }
           }
           ```
+          
+          **Important:** The `project` field can be either a **project name** (e.g., "Bug Bash 2025 - W46") or a **project URL** (e.g., "https://github.com/users/mnkiefer/projects/19"). When a URL is provided as input, use it directly.
           
           Note: The `Classification` field is the concatenated string `Priority|Impact|Complexity` for easy sorting and filtering.
           
