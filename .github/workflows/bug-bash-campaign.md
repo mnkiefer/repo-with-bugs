@@ -39,7 +39,11 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
 ## Steps
 
-1. Calculate the current project name using the format "Bug Bash YYYY - WNN" where YYYY is the current year and WNN is the ISO week number with leading zero (e.g., "Bug Bash 2025 - W46" for week 46). Use this as the project name for all `update-project` safe outputs unless `project_url` input overrides it. The project must already exist - do not attempt to create it.
+1. **Determine the project to use:**
+   - If `${{ inputs.project_url }}` is provided, use that project URL directly in all `update-project` safe outputs
+   - Otherwise, calculate the project name using the format "Bug Bash YYYY - WNN" where YYYY is the current year and WNN is the ISO week number with leading zero (e.g., "Bug Bash 2025 - W46" for week 46)
+   - **CRITICAL**: The format must have spaces around the dash: "Bug Bash 2025 - W46" (not "Bug Bash 2025-W46")
+   - The project must already exist - do not attempt to create it. Only add items to existing projects.
 2. Use the GitHub MCP server tools (issues toolset) to fetch recent open issues (last 30 days) that have at least one of these labels: `bug`, `defect`, or `regression`. Filter out:
    - Issues already on the board
    - Closed issues
@@ -66,7 +70,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
    **Classification**: concatenated string `Priority|Impact|Complexity` (e.g., `High|Minor|Quick Win`)
 
-6. For each selected issue emit an `update-project` safe output using the calculated project name (from step 1). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
+6. For each selected issue emit an `update-project` safe output using the project from step 1 (either the provided URL or the calculated name with spaces around the dash). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
    - Status: "To Do"
    - Priority: (from classification above)
    - Complexity: (from classification above)
