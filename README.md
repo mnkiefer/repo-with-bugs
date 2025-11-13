@@ -1,12 +1,6 @@
-# Bug Bash Campaign - Sample Application 🐛
+# Buggy Application 🐛
 
-Welcome to the Bug Bash Campaign! This repository contains a simple task management application with **intentionally planted bugs** for you to find and report.
-
-## About This Campaign
-
-This is a practice environment designed to help teams learn bug identification, reporting, and collaborative testing. The application has various types of bugs ranging from UI issues to critical functional problems.
-
-## The Application
+Welcome! This repository contains a simple task management application with **intentionally planted bugs** for you to find and report.
 
 A simple **Task Manager** web application that allows users to:
 - Create, view, edit, and delete tasks
