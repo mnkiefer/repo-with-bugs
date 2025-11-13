@@ -15,7 +15,6 @@ engine: copilot
 permissions:
   contents: read
   issues: write
-  repository-projects: write
   pull-requests: read
 
 safe-outputs:
@@ -24,9 +23,11 @@ safe-outputs:
     max: 15
 
 tools:
+  bash: ["*"]
   github:
-    mode: remote
+    mode: local
     toolsets: [issues, projects]
+    github-token: ${{ secrets.PROJECT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
 timeout-minutes: 10
 ---
