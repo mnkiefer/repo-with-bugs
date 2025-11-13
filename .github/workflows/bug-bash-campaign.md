@@ -26,7 +26,7 @@ safe-outputs:
 tools:
   github:
     mode: remote
-    toolsets: [default]
+    toolsets: [issues, projects]
 
 timeout-minutes: 10
 ---
