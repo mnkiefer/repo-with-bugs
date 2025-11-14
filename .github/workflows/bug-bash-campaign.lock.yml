@@ -4084,9 +4084,29 @@ jobs:
               const timestamp = Date.now().toString(36).substring(0, 8);
               return `${slug}-${timestamp}`;
             }
+            function parseProjectInput(projectInput) {
+              const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
+              if (urlMatch) {
+                return {
+                  projectNumber: urlMatch[1],
+                  projectName: null
+                };
+              }
+              if (/^\d+$/.test(projectInput)) {
+                return {
+                  projectNumber: projectInput,
+                  projectName: null
+                };
+              }
+              return {
+                projectNumber: null,
+                projectName: projectInput
+              };
+            }
             async function updateProject(output) {
               const { owner, repo } = context.repo;
-              const campaignId = output.campaign_id || generateCampaignId(output.project);
+              const { projectNumber, projectName } = parseProjectInput(output.project);
+              const campaignId = output.campaign_id || generateCampaignId(projectName || projectNumber || output.project);
               core.info(`Campaign ID: ${campaignId}`);
               core.info(`Managing project: ${output.project}`);
               let githubClient = github;
@@ -4152,9 +4172,12 @@ jobs:
                 const ownerProjects = ownerType === "User" 
                   ? ownerProjectsResult.user.projectsV2.nodes
                   : ownerProjectsResult.organization.projectsV2.nodes;
-                existingProject = ownerProjects.find(
-                  p => p.title === output.project || p.number.toString() === output.project.toString()
-                );
+                existingProject = ownerProjects.find(p => {
+                  if (projectNumber) {
+                    return p.number.toString() === projectNumber;
+                  }
+                  return p.title === projectName;
+                });
                 if (existingProject) {
                   core.info(`✓ Found project "${existingProject.title}" (#${existingProject.number})`);
                   try {
@@ -4185,21 +4208,32 @@ jobs:
                   projectNumber = existingProject.number;
                   core.info(`✓ Using project: ${output.project} (#${projectNumber})`);
                 } else {
+                  if (projectNumber) {
+                    core.error(
+                      `❌ Project not found: ${output.project}\n\n` +
+                      `The project at the provided URL does not exist or is not accessible.\n\n` +
+                      `📋 Please verify:\n` +
+                      `  1. The project URL is correct\n` +
+                      `  2. The project exists at: ${output.project}\n` +
+                      `  3. The token has access to this project`
+                    );
+                    throw new Error(`Project not found: ${output.project}`);
+                  }
                   if (ownerType === "User") {
                     const manualUrl = `https://github.com/users/${owner}/projects/new`;
                     core.error(
-                      `❌ Cannot create project "${output.project}" on user account.\n\n` +
+                      `❌ Cannot create project "${projectName}" on user account.\n\n` +
                       `GitHub Actions cannot create projects on user accounts due to permission restrictions.\n\n` +
                       `📋 To fix this:\n` +
                       `  1. Go to: ${manualUrl}\n` +
-                      `  2. Create a project named "${output.project}"\n` +
+                      `  2. Create a project named "${projectName}"\n` +
                       `  3. Link it to this repository\n` +
                       `  4. Re-run this workflow\n\n` +
                       `The workflow will then be able to add issues/PRs to the existing project.`
                     );
                     throw new Error(`Cannot create project on user account. Please create it manually at ${manualUrl}`);
                   }
-                  core.info(`Creating new project: ${output.project}`);
+                  core.info(`Creating new project: ${projectName}`);
                   const createResult = await githubClient.graphql(
                     `mutation($ownerId: ID!, $title: String!) {
                       createProjectV2(input: {
@@ -4216,7 +4250,7 @@ jobs:
                     }`,
                     { 
                       ownerId: ownerId,  
-                      title: output.project
+                      title: projectName
                     }
                   );
                   const newProject = createResult.createProjectV2.projectV2;
