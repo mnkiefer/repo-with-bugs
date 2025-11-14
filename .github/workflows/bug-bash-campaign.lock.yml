@@ -45,7 +45,7 @@ name: "Weekly Bug Bash Campaign"
 permissions:
   contents: read
   issues: read
-  pull-requests: read
+  repository-projects: read
 
 concurrency:
   group: "gh-aw-${{ github.workflow }}"
@@ -387,7 +387,7 @@ jobs:
     permissions:
       contents: read
       issues: read
-      pull-requests: read
+      repository-projects: read
     concurrency:
       group: "gh-aw-copilot-${{ github.workflow }}"
     env:
@@ -4690,13 +4690,14 @@ jobs:
                         if (!option) {
                           core.info(`Option "${fieldValue}" not found for field "${fieldName}", attempting to create it...`);
                           try {
+                            const allOptions = [...field.options.map(o => ({ name: o.name })), { name: String(fieldValue) }];
                             const createOptionResult = await githubClient.graphql(
-                              `mutation($projectId: ID!, $fieldId: ID!, $name: String!, $color: ProjectV2SingleSelectFieldOptionColor!) {
+                              `mutation($projectId: ID!, $fieldId: ID!, $fieldName: String!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
                                 updateProjectV2Field(input: {
                                   projectId: $projectId,
                                   fieldId: $fieldId,
-                                  name: "${field.name}",
-                                  singleSelectOptions: [{name: $name, color: $color}]
+                                  name: $fieldName,
+                                  singleSelectOptions: $options
                                 }) {
                                   projectV2Field {
                                     ... on ProjectV2SingleSelectField {
@@ -4712,12 +4713,13 @@ jobs:
                               {
                                 projectId,
                                 fieldId: field.id,
-                                name: String(fieldValue),
-                                color: 'GRAY'
+                                fieldName: field.name,
+                                options: allOptions
                               }
                             );
                             const updatedField = createOptionResult.updateProjectV2Field.projectV2Field;
                             option = updatedField.options.find(o => o.name === fieldValue);
+                            field = updatedField; 
                             core.info(`✓ Created option "${fieldValue}" for field "${fieldName}"`);
                           } catch (createError) {
                             core.warning(`Failed to create option "${fieldValue}": ${createError.message}`);

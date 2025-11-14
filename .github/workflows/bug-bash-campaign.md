@@ -14,8 +14,8 @@ engine: copilot
 
 permissions:
   contents: read
-  pull-requests: read
   issues: read
+  repository-projects: read
 
 safe-outputs:
   update-project:
