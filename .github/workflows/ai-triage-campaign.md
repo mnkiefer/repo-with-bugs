@@ -19,9 +19,6 @@ permissions:
 safe-outputs:
   update-project:
     max: 10
-  create-issue:
-    assignees: copilot
-    max: 1
 
 engine: claude
 tools:
@@ -160,12 +157,12 @@ Recommend which type of AI agent is best suited:
 
 For each issue, evaluate:
 
-✅ **Clarity**: Are requirements unambiguous?
-✅ **Context**: Is enough background provided?
-✅ **Scope**: Is the scope well-defined and bounded?
-✅ **Verification**: Are success criteria testable?
-✅ **Independence**: Can it be done without external coordination?
-✅ **Examples**: Are examples/references provided?
+**Clarity**: Are requirements unambiguous?
+**Context**: Is enough background provided?
+**Scope**: Is the scope well-defined and bounded?
+**Verification**: Are success criteria testable?
+**Independence**: Can it be done without external coordination?
+**Examples**: Are examples/references provided?
 
 ## Special Handling
 
@@ -190,7 +187,8 @@ Use the `update-project` tool with this structure:
 ```json
 {
   "project": "AI Agent Ready",
-  "issue": 123,
+  "content_type": "issue",
+  "content_number": 123,
   "fields": {
     "AI-Readiness Score": "9",
     "Status": "Ready",
@@ -200,6 +198,16 @@ Use the `update-project` tool with this structure:
   }
 }
 ```
+
+**Project specification:**
+- Project name: `"AI Agent Ready"` (creates if doesn't exist)
+- Project number: `42`
+- Project URL: `"https://github.com/users/username/projects/42"`
+
+**Content types:**
+- `"issue"` - Add/update an issue on the board
+- `"pull_request"` - Add/update a pull request
+- `"draft"` - Create a draft item (requires `title` and optional `body`)
 
 ## Assignment Strategy
 
@@ -264,16 +272,16 @@ For each issue, provide:
 2. **Score Each Issue**: Evaluate AI-readiness for each issue
 3. **Update Project Boards**: Route all issues to appropriate projects with field assignments
 4. **Select Best Candidate**: Identify the issue with highest AI-Readiness Score (≥8) that isn't already assigned
-5. **Create Copilot Task**: If a good candidate exists, create a new issue with:
+5. **Create Copilot Task**: If a good candidate exists, use the GitHub MCP `create_issue` tool to create a new issue with:
    - Title: "AI Task: [original issue title]"
    - Body: Detailed task description with context from original issue
-   - Assignee: @copilot
-   - Link to original issue
+   - Assignees: ["copilot"]
+   - Link to original issue in the body
 
 ## Execution Notes
 
 - This workflow runs every 4 hours automatically
 - Process maximum 10 open issues per run
-- Only create one Copilot task per run (the best candidate)
+- Only create one Copilot task per hour (the best candidate)
 - Skip issues already assigned to prevent duplicates
 - Focus on unassigned, high AI-readiness issues for Copilot assignment
