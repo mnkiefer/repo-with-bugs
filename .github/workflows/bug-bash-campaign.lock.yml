@@ -4334,8 +4334,8 @@ jobs:
             function generateCampaignId(projectName) {
               const slug = projectName
                 .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+|-+$/g, '')
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "")
                 .substring(0, 30);
               const timestamp = Date.now().toString(36).substring(0, 8);
               return `${slug}-${timestamp}`;
@@ -4381,7 +4381,8 @@ jobs:
                 let projectNumber;
                 let existingProject = null;
                 core.info(`Searching ${ownerType.toLowerCase()} projects...`);
-                const ownerQuery = ownerType === "User"
+                const ownerQuery =
+                  ownerType === "User"
                     ? `query($login: String!) {
                         user(login: $login) {
                           projectsV2(first: 100) {
@@ -4405,12 +4406,9 @@ jobs:
                         }
                       }`;
                 const ownerProjectsResult = await githubClient.graphql(ownerQuery, { login: owner });
-                const ownerProjects = ownerType === "User" 
-                  ? ownerProjectsResult.user.projectsV2.nodes
-                  : ownerProjectsResult.organization.projectsV2.nodes;
-                existingProject = ownerProjects.find(
-                  p => p.title === output.project || p.number.toString() === output.project.toString()
-                );
+                const ownerProjects =
+                  ownerType === "User" ? ownerProjectsResult.user.projectsV2.nodes : ownerProjectsResult.organization.projectsV2.nodes;
+                existingProject = ownerProjects.find(p => p.title === output.project || p.number.toString() === output.project.toString());
                 if (existingProject) {
                   core.info(`✓ Found project "${existingProject.title}" (#${existingProject.number})`);
                   try {
@@ -4445,13 +4443,13 @@ jobs:
                     const manualUrl = `https://github.com/users/${owner}/projects/new`;
                     core.error(
                       `❌ Cannot create project "${output.project}" on user account.\n\n` +
-                      `GitHub Actions cannot create projects on user accounts due to permission restrictions.\n\n` +
-                      `📋 To fix this:\n` +
-                      `  1. Go to: ${manualUrl}\n` +
-                      `  2. Create a project named "${output.project}"\n` +
-                      `  3. Link it to this repository\n` +
-                      `  4. Re-run this workflow\n\n` +
-                      `The workflow will then be able to add issues/PRs to the existing project.`
+                        `GitHub Actions cannot create projects on user accounts due to permission restrictions.\n\n` +
+                        `📋 To fix this:\n` +
+                        `  1. Go to: ${manualUrl}\n` +
+                        `  2. Create a project named "${output.project}"\n` +
+                        `  3. Link it to this repository\n` +
+                        `  4. Re-run this workflow\n\n` +
+                        `The workflow will then be able to add issues/PRs to the existing project.`
                     );
                     throw new Error(`Cannot create project on user account. Please create it manually at ${manualUrl}`);
                   }
@@ -4470,9 +4468,9 @@ jobs:
                         }
                       }
                     }`,
-                    { 
-                      ownerId: ownerId,  
-                      title: output.project
+                    {
+                      ownerId: ownerId, 
+                      title: output.project,
                     }
                   );
                   const newProject = createResult.createProjectV2.projectV2;
@@ -4500,19 +4498,25 @@ jobs:
                 }
                 const contentNumber = output.content_number || output.issue || output.pull_request;
                 if (contentNumber) {
-                  const contentType = output.content_type === "pull_request" ? "PullRequest" : 
-                                      output.content_type === "issue" ? "Issue" :
-                                      output.issue ? "Issue" : "PullRequest";
+                  const contentType =
+                    output.content_type === "pull_request"
+                      ? "PullRequest"
+                      : output.content_type === "issue"
+                        ? "Issue"
+                        : output.issue
+                          ? "Issue"
+                          : "PullRequest";
                   core.info(`Adding/updating ${contentType} #${contentNumber} on project board`);
-                  const contentQuery = contentType === "Issue"
-                    ? `query($owner: String!, $repo: String!, $number: Int!) {
+                  const contentQuery =
+                    contentType === "Issue"
+                      ? `query($owner: String!, $repo: String!, $number: Int!) {
                         repository(owner: $owner, name: $repo) {
                           issue(number: $number) {
                             id
                           }
                         }
                       }`
-                    : `query($owner: String!, $repo: String!, $number: Int!) {
+                      : `query($owner: String!, $repo: String!, $number: Int!) {
                         repository(owner: $owner, name: $repo) {
                           pullRequest(number: $number) {
                             id
@@ -4524,9 +4528,7 @@ jobs:
                     repo,
                     number: contentNumber,
                   });
-                  const contentId = contentType === "Issue"
-                    ? contentResult.repository.issue.id
-                    : contentResult.repository.pullRequest.id;
+                  const contentId = contentType === "Issue" ? contentResult.repository.issue.id : contentResult.repository.pullRequest.id;
                   const existingItemsResult = await githubClient.graphql(
                     `query($projectId: ID!) {
                       node(id: $projectId) {
@@ -4549,9 +4551,7 @@ jobs:
                     }`,
                     { projectId }
                   );
-                  const existingItem = existingItemsResult.node.items.nodes.find(
-                    item => item.content && item.content.id === contentId
-                  );
+                  const existingItem = existingItemsResult.node.items.nodes.find(item => item.content && item.content.id === contentId);
                   let itemId;
                   if (existingItem) {
                     itemId = existingItem.id;
@@ -4578,7 +4578,7 @@ jobs:
                         owner,
                         repo,
                         issue_number: contentNumber,
-                        labels: [campaignLabel]
+                        labels: [campaignLabel],
                       });
                       core.info(`✓ Added campaign label: ${campaignLabel}`);
                     } catch (labelError) {
@@ -4617,7 +4617,8 @@ jobs:
                       let field = projectFields.find(f => f.name.toLowerCase() === fieldName.toLowerCase());
                       if (!field) {
                         core.info(`Field "${fieldName}" not found, attempting to create it...`);
-                        const isTextField = fieldName.toLowerCase() === 'classification' || typeof fieldValue === 'string' && fieldValue.includes('|');
+                        const isTextField =
+                          fieldName.toLowerCase() === "classification" || (typeof fieldValue === "string" && fieldValue.includes("|"));
                         if (isTextField) {
                           try {
                             const createFieldResult = await githubClient.graphql(
@@ -4638,7 +4639,7 @@ jobs:
                               {
                                 projectId,
                                 name: fieldName,
-                                dataType: 'TEXT'
+                                dataType: "TEXT",
                               }
                             );
                             field = createFieldResult.createProjectV2Field.projectV2Field;
@@ -4672,8 +4673,8 @@ jobs:
                               {
                                 projectId,
                                 name: fieldName,
-                                dataType: 'SINGLE_SELECT',
-                                options: [{ name: String(fieldValue), color: 'GRAY' }]
+                                dataType: "SINGLE_SELECT",
+                                options: [{ name: String(fieldValue), color: "GRAY" }],
                               }
                             );
                             field = createFieldResult.createProjectV2Field.projectV2Field;
@@ -4714,7 +4715,7 @@ jobs:
                                 projectId,
                                 fieldId: field.id,
                                 fieldName: field.name,
-                                options: allOptions
+                                options: allOptions,
                               }
                             );
                             const updatedField = createOptionResult.updateProjectV2Field.projectV2Field;
@@ -4766,15 +4767,15 @@ jobs:
                   const usingCustomToken = !!process.env.PROJECT_GITHUB_TOKEN;
                   core.error(
                     `Failed to manage project: ${error.message}\n\n` +
-                    `💡 Troubleshooting:\n` +
-                    `  1. Create the project manually first at https://github.com/orgs/${owner}/projects/new\n` +
-                    `     Then the workflow can add items to it automatically.\n\n` +
-                    `  2. Or, add a Personal Access Token (PAT) with 'project' permissions:\n` +
-                    `     - Create a PAT at https://github.com/settings/tokens/new?scopes=project\n` +
-                    `     - Add it as a secret named PROJECT_GITHUB_TOKEN\n` +
-                    `     - Pass it to the workflow: PROJECT_GITHUB_TOKEN: \${{ secrets.PROJECT_GITHUB_TOKEN }}\n\n` +
-                    `  3. Ensure the workflow has 'projects: write' permission.\n\n` +
-                    `${usingCustomToken ? '⚠️  Note: Already using PROJECT_GITHUB_TOKEN but still getting permission error.' : '📝 Currently using default GITHUB_TOKEN (no project create permissions).'}`
+                      `💡 Troubleshooting:\n` +
+                      `  1. Create the project manually first at https://github.com/orgs/${owner}/projects/new\n` +
+                      `     Then the workflow can add items to it automatically.\n\n` +
+                      `  2. Or, add a Personal Access Token (PAT) with 'project' permissions:\n` +
+                      `     - Create a PAT at https://github.com/settings/tokens/new?scopes=project\n` +
+                      `     - Add it as a secret named PROJECT_GITHUB_TOKEN\n` +
+                      `     - Pass it to the workflow: PROJECT_GITHUB_TOKEN: \${{ secrets.PROJECT_GITHUB_TOKEN }}\n\n` +
+                      `  3. Ensure the workflow has 'projects: write' permission.\n\n` +
+                      `${usingCustomToken ? "⚠️  Note: Already using PROJECT_GITHUB_TOKEN but still getting permission error." : "📝 Currently using default GITHUB_TOKEN (no project create permissions)."}`
                   );
                 } else {
                   core.error(`Failed to manage project: ${error.message}`);
@@ -4787,9 +4788,7 @@ jobs:
               if (!result.success) {
                 return;
               }
-              const updateProjectItems = result.items.filter(
-                (item) => item.type === "update_project"
-              );
+              const updateProjectItems = result.items.filter(item => item.type === "update_project");
               if (updateProjectItems.length === 0) {
                 core.info("No update-project items found in agent output");
                 return;
@@ -4797,7 +4796,9 @@ jobs:
               core.info(`Processing ${updateProjectItems.length} update_project items`);
               for (let i = 0; i < updateProjectItems.length; i++) {
                 const output = updateProjectItems[i];
-                core.info(`\n[${i + 1}/${updateProjectItems.length}] Processing item: ${output.content_type || 'project'} #${output.content_number || output.issue || output.pull_request || 'N/A'}`);
+                core.info(
+                  `\n[${i + 1}/${updateProjectItems.length}] Processing item: ${output.content_type || "project"} #${output.content_number || output.issue || output.pull_request || "N/A"}`
+                );
                 try {
                   await updateProject(output);
                 } catch (error) {
