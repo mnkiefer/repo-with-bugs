@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       project_url:
-        description: "GitHub project URL (org or user)"
+        description: "GitHub Project v2 user/org URL"
         required: true
         type: string
 
@@ -69,15 +69,26 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 
    **Classification**: concatenated string `Priority|Impact|Complexity` (e.g., `High|Minor|Quick Win`)
 
-6. For each selected issue emit an `update-project` safe output using the project from step 1 (either the provided URL or the calculated name with spaces around the dash). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
+6. **Before adding items, ensure required fields exist on the project board:**
+   - Use the projects toolset from the GitHub MCP server to check if these fields exist:
+     - `Status` (SingleSelect) - with option "To Do"
+     - `Priority` (SingleSelect) - with options: "Critical", "High", "Medium"
+     - `Complexity` (SingleSelect) - with options: "Complex", "Quick Win", "Standard"
+     - `Impact` (SingleSelect) - with options: "Blocker", "Major", "Minor"
+     - `Classification` (Text) - for storing concatenated classification string
+   - If any field is missing, create it with the appropriate type and options
+   - If field exists but missing required options, add the missing options
+   
+7. For each selected issue emit an `update-project` safe output using the project from step 1 (either the provided URL or the calculated name with spaces around the dash). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
    - Status: "To Do"
    - Priority: (from classification above)
    - Complexity: (from classification above)
    - Impact: (from classification above)
    - Classification: (concatenated string from above)
-7. Limit additions to `max` (15) in safe-outputs.
-8. Log a summary to the workflow step summary with:
+8. Limit additions to `max` (15) in safe-outputs.
+9. Log a summary to the workflow step summary with:
    - Project name used
+   - Fields created or updated (if any)
    - Count scanned vs added vs skipped
    - Priority distribution (Critical / High / Medium)
    - Top 10 candidates (markdown table) sorted by Priority then Impact
@@ -112,7 +123,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
 }
 ```
 
-**Important:** The `project` field can be either a **project name** (e.g., "Bug Bash 2025 - W46") or a **project URL** (e.g., "https://github.com/users/mnkiefer/projects/19"). When a URL is provided as input, use it directly.
+**Important:** The `project` field can be either a **project name** (e.g., "Bug Bash 2025 - W46") or a **project URL** (e.g., "https://github.com/users/monalisa/projects/42"). When a URL is provided as input, use it directly.
 
 Note: The `Classification` field is the concatenated string `Priority|Impact|Complexity` for easy sorting and filtering.
 
@@ -121,6 +132,7 @@ Note: The `Classification` field is the concatenated string `Priority|Impact|Com
 # Bug Bash Weekly Campaign Summary
 
 **Project**: <CALCULATED_PROJECT_NAME> (e.g., Bug Bash 2025 - W46)
+**Fields Created/Updated**: <LIST_OF_FIELDS> (or 'None - all fields existed')
 **Scanned**: <SCANNED_COUNT> | **Added**: <ADDED_COUNT> | **Skipped**: <SKIPPED_COUNT>
 
 ## Priority Distribution
