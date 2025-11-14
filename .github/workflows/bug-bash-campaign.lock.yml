@@ -4331,6 +4331,19 @@ jobs:
               }
               return { success: true, items: validatedOutput.items };
             }
+            function parseProjectInput(projectInput) {
+              const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
+              if (urlMatch) {
+                return {
+                  projectNumber: urlMatch[1],
+                  projectName: null,
+                };
+              }
+              return {
+                projectNumber: /^\d+$/.test(projectInput) ? projectInput : null,
+                projectName: /^\d+$/.test(projectInput) ? null : projectInput,
+              };
+            }
             function generateCampaignId(projectName) {
               const slug = projectName
                 .toLowerCase()
@@ -4342,7 +4355,10 @@ jobs:
             }
             async function updateProject(output) {
               const { owner, repo } = context.repo;
-              const campaignId = output.campaign_id || generateCampaignId(output.project);
+              const { projectNumber: parsedProjectNumber, projectName: parsedProjectName } = parseProjectInput(output.project);
+              core.info(`Parsed project input: ${output.project} -> number=${parsedProjectNumber}, name=${parsedProjectName}`);
+              const displayName = parsedProjectName || parsedProjectNumber || output.project;
+              const campaignId = output.campaign_id || generateCampaignId(displayName);
               core.info(`Campaign ID: ${campaignId}`);
               core.info(`Managing project: ${output.project}`);
               let githubClient = github;
@@ -4408,7 +4424,12 @@ jobs:
                 const ownerProjectsResult = await githubClient.graphql(ownerQuery, { login: owner });
                 const ownerProjects =
                   ownerType === "User" ? ownerProjectsResult.user.projectsV2.nodes : ownerProjectsResult.organization.projectsV2.nodes;
-                existingProject = ownerProjects.find(p => p.title === output.project || p.number.toString() === output.project.toString());
+                existingProject = ownerProjects.find(p => {
+                  if (parsedProjectNumber) {
+                    return p.number.toString() === parsedProjectNumber;
+                  }
+                  return p.title === parsedProjectName;
+                });
                 if (existingProject) {
                   core.info(`✓ Found project "${existingProject.title}" (#${existingProject.number})`);
                   try {
@@ -4440,18 +4461,22 @@ jobs:
                   core.info(`✓ Using project: ${output.project} (#${projectNumber})`);
                 } else {
                   if (ownerType === "User") {
+                    const projectDisplay = parsedProjectNumber ? `project #${parsedProjectNumber}` : `project "${parsedProjectName}"`;
                     const manualUrl = `https://github.com/users/${owner}/projects/new`;
                     core.error(
-                      `❌ Cannot create project "${output.project}" on user account.\n\n` +
+                      `❌ Cannot find ${projectDisplay} on user account.\n\n` +
                         `GitHub Actions cannot create projects on user accounts due to permission restrictions.\n\n` +
                         `📋 To fix this:\n` +
-                        `  1. Go to: ${manualUrl}\n` +
-                        `  2. Create a project named "${output.project}"\n` +
-                        `  3. Link it to this repository\n` +
-                        `  4. Re-run this workflow\n\n` +
+                        `  1. Verify the project exists and is accessible\n` +
+                        `  2. If it doesn't exist, create it at: ${manualUrl}\n` +
+                        `  3. Ensure it's linked to this repository\n` +
+                        `  4. Provide a valid PROJECT_GITHUB_TOKEN with 'project' scope\n` +
+                        `  5. Re-run this workflow\n\n` +
                         `The workflow will then be able to add issues/PRs to the existing project.`
                     );
-                    throw new Error(`Cannot create project on user account. Please create it manually at ${manualUrl}`);
+                    throw new Error(
+                      `Cannot find ${projectDisplay} on user account. Please verify it exists and you have the correct token permissions.`
+                    );
                   }
                   core.info(`Creating new project: ${output.project}`);
                   const createResult = await githubClient.graphql(
