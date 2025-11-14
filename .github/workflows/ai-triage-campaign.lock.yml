@@ -4454,48 +4454,30 @@ jobs:
             }
             function parseProjectInput(projectInput) {
               const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
-              if (urlMatch) {
-                return {
-                  projectNumber: urlMatch[1],
-                  projectName: null,
-                };
-              }
+              if (urlMatch) return { projectNumber: urlMatch[1], projectName: null };
               return {
                 projectNumber: /^\d+$/.test(projectInput) ? projectInput : null,
-                projectName: /^\d+$/.test(projectInput) ? null : projectInput,
+                projectName: /^\d+$/.test(projectInput) ? null : projectInput
               };
             }
             function generateCampaignId(projectName) {
-              const slug = projectName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .substring(0, 30);
-              const timestamp = Date.now().toString(36).substring(0, 8);
-              return `${slug}-${timestamp}`;
+              const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").substring(0, 30);
+              return `${slug}-${Date.now().toString(36).substring(0, 8)}`;
             }
             async function updateProject(output) {
               const { owner, repo } = context.repo;
               const { projectNumber: parsedProjectNumber, projectName: parsedProjectName } = parseProjectInput(output.project);
-              core.info(`Parsed project input: ${output.project} -> number=${parsedProjectNumber}, name=${parsedProjectName}`);
               const displayName = parsedProjectName || parsedProjectNumber || output.project;
               const campaignId = output.campaign_id || generateCampaignId(displayName);
-              core.info(`Campaign ID: ${campaignId}`);
-              core.info(`Managing project: ${output.project}`);
+              core.info(`Campaign: ${campaignId}, Project: ${output.project}`);
               let githubClient = github;
               if (process.env.PROJECT_GITHUB_TOKEN) {
-                core.info(`✓ Using custom PROJECT_GITHUB_TOKEN for project operations`);
                 const { Octokit } = require("@octokit/rest");
                 const octokit = new Octokit({
                   auth: process.env.PROJECT_GITHUB_TOKEN,
-                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com",
+                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com"
                 });
-                githubClient = {
-                  graphql: octokit.graphql.bind(octokit),
-                  rest: octokit.rest,
-                };
-              } else {
-                core.info(`ℹ Using default GITHUB_TOKEN (may not have project creation permissions)`);
+                githubClient = { graphql: octokit.graphql.bind(octokit), rest: octokit.rest };
               }
               try {
                 const repoResult = await githubClient.graphql(
