@@ -15,6 +15,7 @@ engine: copilot
 permissions:
   contents: read
   pull-requests: read
+  issues: read
 
 safe-outputs:
   update-project:
@@ -78,7 +79,7 @@ You are the Bug Bash Campaign orchestrator. Every week, you organize a focused b
      - `Classification` (Text) - for storing concatenated classification string
    - If any field is missing, create it with the appropriate type and options
    - If field exists but missing required options, add the missing options
-   
+
 7. For each selected issue emit an `update-project` safe output using the project from step 1 (either the provided URL or the calculated name with spaces around the dash). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
    - Status: "To Do"
    - Priority: (from classification above)

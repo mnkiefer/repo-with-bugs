@@ -44,6 +44,7 @@ name: "Weekly Bug Bash Campaign"
 
 permissions:
   contents: read
+  issues: read
   pull-requests: read
 
 concurrency:
@@ -385,6 +386,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: read
       pull-requests: read
     concurrency:
       group: "gh-aw-copilot-${{ github.workflow }}"
@@ -1380,7 +1382,7 @@ jobs:
                - `Classification` (Text) - for storing concatenated classification string
              - If any field is missing, create it with the appropriate type and options
              - If field exists but missing required options, add the missing options
-             
+          
           7. For each selected issue emit an `update-project` safe output using the project from step 1 (either the provided URL or the calculated name with spaces around the dash). Use the projects toolset from the GitHub MCP server to interact with the project board. Safe output fields:
              - Status: "To Do"
              - Priority: (from classification above)
