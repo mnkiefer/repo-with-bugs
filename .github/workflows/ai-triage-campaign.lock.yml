@@ -886,6 +886,36 @@ jobs:
                 },
               },
               {
+                name: "update_project",
+                description: "Add an issue or pull request to a GitHub project with specified field values",
+                inputSchema: {
+                  type: "object",
+                  required: ["project", "content_type", "content_number"],
+                  properties: {
+                    project: {
+                      type: "string",
+                      description: "Project URL (e.g., https://github.com/users/monalisa/projects/42)",
+                    },
+                    content_type: {
+                      type: "string",
+                      enum: ["issue", "pull_request"],
+                      description: "Type of content to add to the project",
+                    },
+                    content_number: {
+                      type: ["number", "string"],
+                      description: "Issue or pull request number",
+                    },
+                    fields: {
+                      type: "object",
+                      description:
+                        "Project field values to set (e.g., Status, Priority, Complexity, Impact, Classification). Field names and values must match project configuration.",
+                      additionalProperties: true,
+                    },
+                  },
+                  additionalProperties: false,
+                },
+              },
+              {
                 name: "update_issue",
                 description: "Update a GitHub issue",
                 inputSchema: {
@@ -1505,6 +1535,14 @@ jobs:
           
           To report a missing tool use the missing-tool tool from safeoutputs.
           
+          **Managing Project Boards**
+          
+          To manage GitHub Project boards (add issues/PRs, update fields, create projects):
+          - Use the update-project tool from safeoutputs
+          - Specify the project by name or number
+          - Provide issue/PR numbers to add to the board
+          - Optionally update custom fields (Status, Priority, Sprint, etc.)
+          
           PROMPT_EOF
       - name: Append GitHub context to prompt
         env:
@@ -2082,6 +2120,8 @@ jobs:
                     return 40;
                   case "upload_asset":
                     return 10;
+                  case "update_project":
+                    return 15;
                   default:
                     return 1;
                 }
@@ -2680,6 +2720,69 @@ jobs:
                       item.message = sanitizeContent(item.message, 2048);
                       if (item.ruleIdSuffix) {
                         item.ruleIdSuffix = sanitizeContent(item.ruleIdSuffix, 128);
+                      }
+                      break;
+                    case "update_project":
+                      if (!item.project || typeof item.project !== "string") {
+                        errors.push(`Line ${i + 1}: update-project requires a 'project' string field`);
+                        continue;
+                      }
+                      item.project = sanitizeContent(item.project, 512);
+                      if (item.create_if_missing !== undefined && typeof item.create_if_missing !== "boolean") {
+                        errors.push(`Line ${i + 1}: update-project 'create_if_missing' must be a boolean`);
+                        continue;
+                      }
+                      if (item.description !== undefined) {
+                        if (typeof item.description !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'description' must be a string`);
+                          continue;
+                        }
+                        item.description = sanitizeContent(item.description, 512);
+                      }
+                      if (item.campaign_id !== undefined) {
+                        if (typeof item.campaign_id !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'campaign_id' must be a string`);
+                          continue;
+                        }
+                        item.campaign_id = sanitizeContent(item.campaign_id, 128);
+                      }
+                      if (item.content_type !== undefined) {
+                        if (typeof item.content_type !== "string" || !["issue", "pull_request", "draft"].includes(item.content_type)) {
+                          errors.push(`Line ${i + 1}: update-project 'content_type' must be 'issue', 'pull_request', or 'draft'`);
+                          continue;
+                        }
+                      }
+                      if (item.content_number !== undefined) {
+                        const contentNumValidation = validateIssueOrPRNumber(item.content_number, "update-project 'content_number'", i + 1);
+                        if (!contentNumValidation.isValid) {
+                          if (contentNumValidation.error) errors.push(contentNumValidation.error);
+                          continue;
+                        }
+                      }
+                      if (item.title !== undefined) {
+                        if (typeof item.title !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'title' must be a string`);
+                          continue;
+                        }
+                        item.title = sanitizeContent(item.title, 128);
+                      }
+                      if (item.body !== undefined) {
+                        if (typeof item.body !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'body' must be a string`);
+                          continue;
+                        }
+                        item.body = sanitizeContent(item.body, maxBodyLength);
+                      }
+                      if (item.fields !== undefined) {
+                        if (typeof item.fields !== "object" || Array.isArray(item.fields)) {
+                          errors.push(`Line ${i + 1}: update-project 'fields' must be an object`);
+                          continue;
+                        }
+                        for (const [key, value] of Object.entries(item.fields)) {
+                          if (typeof value === "string") {
+                            item.fields[key] = sanitizeContent(value, 512);
+                          }
+                        }
                       }
                       break;
                     default:
@@ -4302,48 +4405,30 @@ jobs:
             }
             function parseProjectInput(projectInput) {
               const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
-              if (urlMatch) {
-                return {
-                  projectNumber: urlMatch[1],
-                  projectName: null,
-                };
-              }
+              if (urlMatch) return { projectNumber: urlMatch[1], projectName: null };
               return {
                 projectNumber: /^\d+$/.test(projectInput) ? projectInput : null,
-                projectName: /^\d+$/.test(projectInput) ? null : projectInput,
+                projectName: /^\d+$/.test(projectInput) ? null : projectInput
               };
             }
             function generateCampaignId(projectName) {
-              const slug = projectName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .substring(0, 30);
-              const timestamp = Date.now().toString(36).substring(0, 8);
-              return `${slug}-${timestamp}`;
+              const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").substring(0, 30);
+              return `${slug}-${Date.now().toString(36).substring(0, 8)}`;
             }
             async function updateProject(output) {
               const { owner, repo } = context.repo;
               const { projectNumber: parsedProjectNumber, projectName: parsedProjectName } = parseProjectInput(output.project);
-              core.info(`Parsed project input: ${output.project} -> number=${parsedProjectNumber}, name=${parsedProjectName}`);
               const displayName = parsedProjectName || parsedProjectNumber || output.project;
               const campaignId = output.campaign_id || generateCampaignId(displayName);
-              core.info(`Campaign ID: ${campaignId}`);
-              core.info(`Managing project: ${output.project}`);
+              core.info(`Campaign: ${campaignId}, Project: ${output.project}`);
               let githubClient = github;
               if (process.env.PROJECT_GITHUB_TOKEN) {
-                core.info(`✓ Using custom PROJECT_GITHUB_TOKEN for project operations`);
                 const { Octokit } = require("@octokit/rest");
                 const octokit = new Octokit({
                   auth: process.env.PROJECT_GITHUB_TOKEN,
-                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com",
+                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com"
                 });
-                githubClient = {
-                  graphql: octokit.graphql.bind(octokit),
-                  rest: octokit.rest,
-                };
-              } else {
-                core.info(`ℹ Using default GITHUB_TOKEN (may not have project creation permissions)`);
+                githubClient = { graphql: octokit.graphql.bind(octokit), rest: octokit.rest };
               }
               try {
                 const repoResult = await githubClient.graphql(

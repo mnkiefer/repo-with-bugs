@@ -20,7 +20,7 @@ engine: claude
 tools:
   github:
     mode: remote
-    toolsets: [repos]  # Only repos for querying issues
+    toolsets: [repos]
 safe-outputs:
   create-issue:
     max: 5
