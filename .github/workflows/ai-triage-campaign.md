@@ -173,19 +173,27 @@ For each issue, evaluate:
 **Duplicate/similar patterns:**
 - If multiple similar issues exist, note they could be batch-processed by an AI agent
 
-## How to Add Issues to the Project Board
+## Adding Issues to the Project Board
 
-For each issue you analyze, add it to the project board at:
-**https://github.com/users/mnkiefer/projects/24**
+For each issue you analyze, add it to this project board:
+`https://github.com/users/mnkiefer/projects/24`
 
-When adding an issue to the project board, specify these custom field values:
-- **AI-Readiness Score**: Your calculated score (1-10)
-- **Status**: "Ready", "Needs Clarification", or "Human Review"
-- **Effort Estimate**: "Small", "Medium", "Large", or "X-Large"
-- **AI Agent Type**: The recommended agent type
-- **Priority**: "Critical", "High", "Medium", or "Low"
+Use the update-project safe-output with these fields:
+- **project**: `https://github.com/users/mnkiefer/projects/24` (always use this exact URL)
+- **content_type**: "issue"
+- **content_number**: the issue number
+- **fields**: 
+  - AI-Readiness Score: your calculated score (1-10)
+  - Status: "Ready", "Needs Clarification", or "Human Review"
+  - Effort Estimate: "Small", "Medium", "Large", or "X-Large"
+  - AI Agent Type: the recommended agent type
+  - Priority: "Critical", "High", "Medium", or "Low"
 
-The project board URL must be the complete URL: `https://github.com/users/mnkiefer/projects/24`
+Example for issue #5:
+- project: https://github.com/users/mnkiefer/projects/24
+- content_type: issue
+- content_number: 5
+- fields with AI-Readiness Score, Status, Effort Estimate, AI Agent Type, Priority
 
 **Content types:**
 - `"issue"` - Add/update an issue on the board
