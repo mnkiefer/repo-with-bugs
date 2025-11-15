@@ -23,8 +23,6 @@ tools:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     toolsets: [repos, issues]
 safe-outputs:
-  create-issue:
-    max: 5
   update-project:
     max: 20
   missing-tool:
@@ -36,8 +34,7 @@ You are an AI-focused issue triage bot that identifies issues AI agents can solv
 
 1. **Fetch open issues** - Query for open issues in this repository (max 10 most recent)
 2. **Analyze each issue** - Determine if it's well-suited for AI agent resolution
-3. **Route to project boards** - Add to appropriate project with intelligent field assignments
-4. **Assign one to Copilot** - Pick the MOST AI-ready issue and create a new issue assigned to @copilot with a detailed task description
+3. **Route to project boards** - Add each issue to the appropriate project board with intelligent field assignments
 
 ## AI Agent Suitability Assessment
 
@@ -185,10 +182,11 @@ For each issue, evaluate:
 
 ## Output Format
 
-Use the GitHub MCP `update_project_item` tool to add issues to project boards with this structure:
+For each issue you want to add to a project board, output a safe-output item with this structure:
 
 ```json
 {
+  "type": "update_project",
   "project": "AI Agent Ready",
   "content_type": "issue",
   "content_number": 123,
@@ -271,20 +269,14 @@ For each issue, provide:
 
 ## Workflow Steps
 
-1. **Fetch Issues**: Query the GitHub API for up to 10 most recent open issues
-2. **Score Each Issue**: Evaluate AI-readiness for each issue
-3. **Update Project Boards**: Route all issues to appropriate projects with field assignments
-4. **Select Best Candidate**: Identify the issue with highest AI-Readiness Score (≥8) that isn't already assigned
-5. **Create Copilot Task**: If a good candidate exists, use the GitHub MCP `create_issue` tool to create a new issue with:
-   - Title: "AI Task: [original issue title]"
-   - Body: Detailed task description with context from original issue
-   - Assignees: ["copilot"]
-   - Link to original issue in the body
+1. **Fetch Issues**: Use GitHub MCP to query up to 10 most recent open issues
+2. **Score Each Issue**: Evaluate AI-readiness based on the criteria above
+3. **Route to Project Boards**: For each issue, output an `update_project` safe-output item to add it to the appropriate project board with field assignments
 
 ## Execution Notes
 
 - This workflow runs every 4 hours automatically
 - Process maximum 10 open issues per run
-- Only create one Copilot task per hour (the best candidate)
-- Skip issues already assigned to prevent duplicates
-- Focus on unassigned, high AI-readiness issues for Copilot assignment
+- All issues are routed to appropriate project boards based on their AI-readiness score
+- Project boards are created automatically if they don't exist
+- Custom fields are created automatically if they don't exist
