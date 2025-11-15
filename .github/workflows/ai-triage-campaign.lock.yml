@@ -41,7 +41,7 @@ name: "AI Triage Campaign"
 
 permissions:
   contents: read
-  issues: write
+  issues: read
   repository-projects: write
 
 concurrency:
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
+      issues: read
       repository-projects: write
     concurrency:
       group: "gh-aw-copilot-${{ github.workflow }}"

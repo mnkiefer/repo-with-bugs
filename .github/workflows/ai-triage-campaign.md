@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  issues: write
+  issues: read
   repository-projects: write
 
 # Important: GITHUB_TOKEN cannot access organization projects
