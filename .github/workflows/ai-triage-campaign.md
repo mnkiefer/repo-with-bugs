@@ -8,8 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       project_url:
-        description: 'GitHub project URL (e.g., https://github.com/users/username/projects/42)'
-        required: true
+        description: 'GitHub project URL (e.g., https://github.com/users/username/projects/24)'
+        required: false
+        default: 'https://github.com/users/mnkiefer/projects/24'
       max_issues:
         description: 'Maximum number of issues to process'
         required: false
@@ -191,9 +192,11 @@ For each issue you want to add to a project board, output a safe-output item wit
 }
 ```
 
-**CRITICAL: You MUST use the EXACT full project URL "${{ github.event.inputs.project_url }}" for the "project" field.**
+**CRITICAL: You MUST use the EXACT full project URL for the "project" field.**
 
-Do NOT use just the number (like "24") or a name - you MUST use the complete URL as shown in the example above.
+The "project" field value MUST be: ${{ github.event.inputs.project_url }}
+
+Copy this value EXACTLY as-is, including "https://" and the full path.
 
 **Content types:**
 - `"issue"` - Add/update an issue on the board

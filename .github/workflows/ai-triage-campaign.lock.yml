@@ -44,8 +44,9 @@ name: "AI Triage Campaign"
         description: Maximum number of issues to process
         required: false
       project_url:
-        description: GitHub project URL (e.g., https://github.com/users/username/projects/42)
-        required: true
+        default: https://github.com/users/mnkiefer/projects/24
+        description: GitHub project URL (e.g., https://github.com/users/username/projects/24)
+        required: false
 
 permissions:
   contents: read
@@ -1251,9 +1252,11 @@ jobs:
           }
           ```
           
-          **CRITICAL: You MUST use the EXACT full project URL "${GH_AW_EXPR_7B9A5317}" for the "project" field.**
+          **CRITICAL: You MUST use the EXACT full project URL for the "project" field.**
           
-          Do NOT use just the number (like "24") or a name - you MUST use the complete URL as shown in the example above.
+          The "project" field value MUST be: ${GH_AW_EXPR_7B9A5317}
+          
+          Copy this value EXACTLY as-is, including "https://" and the full path.
           
           **Content types:**
           - `"issue"` - Add/update an issue on the board
