@@ -20,6 +20,7 @@ engine: copilot
 tools:
   github:
     mode: remote
+    github-token: ${{ secrets.GITHUB_TOKEN }}
     toolsets: [repos, issues]
 safe-outputs:
   create-issue:
