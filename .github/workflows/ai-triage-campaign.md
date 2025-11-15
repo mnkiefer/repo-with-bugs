@@ -6,6 +6,14 @@ on:
   schedule:
     - cron: "0 */4 * * *"  # Every 4 hours
   workflow_dispatch:
+    inputs:
+      project_url:
+        description: 'GitHub project URL (e.g., https://github.com/users/username/projects/42)'
+        required: true
+      max_issues:
+        description: 'Maximum number of issues to process'
+        required: false
+        default: '10'
 
 permissions:
   contents: read
@@ -32,9 +40,9 @@ You are an AI-focused issue triage bot that identifies issues AI agents can solv
 
 ## Your Mission
 
-1. **Fetch open issues** - Query for open issues in this repository (max 10 most recent)
+1. **Fetch open issues** - Query for open issues in this repository (max ${{ github.event.inputs.max_issues }} most recent, default: 10)
 2. **Analyze each issue** - Determine if it's well-suited for AI agent resolution
-3. **Route to project boards** - Add each issue to the appropriate project board with intelligent field assignments
+3. **Route to project board** - Add each issue to project ${{ github.event.inputs.project_url }} with intelligent field assignments
 
 ## AI Agent Suitability Assessment
 
@@ -83,35 +91,17 @@ You are an AI-focused issue triage bot that identifies issues AI agents can solv
 
 ## Routing Strategy
 
-### Project Boards
+### Project Board
 
-1. **"AI Agent Ready"** - Issues perfect for immediate AI agent work
-   - Well-defined scope
-   - Clear acceptance criteria
-   - All necessary context provided
-   - No external dependencies
+**Use project URL "${{ github.event.inputs.project_url }}" for ALL issues**
 
-2. **"AI Agent Potential"** - Issues that could be AI-ready with clarification
-   - Generally well-scoped but missing some details
-   - May need follow-up questions answered
-   - Partially defined acceptance criteria
+All issues will be routed to this single project board, with differentiation handled through the **Status** field:
 
-3. **"Human Review Required"** - Issues needing human expertise
-   - Architectural decisions
-   - Vague requirements
-   - Complex debugging scenarios
-   - Multi-component coordination
-
-4. **"Documentation & Examples"** - Documentation-focused work
-   - README improvements
-   - API documentation
-   - Usage examples
-   - Migration guides
-
-5. **"Testing & Quality"** - Test-related improvements
-   - Test coverage gaps
-   - Missing integration tests
-   - Test refactoring
+- **Status: "Ready"** - Issues perfect for immediate AI agent work (AI-Readiness ≥ 8)
+- **Status: "Needs Clarification"** - Issues that could be AI-ready with more details (Score 5-7)
+- **Status: "Human Review"** - Issues needing human expertise (Score < 5)
+- **Status: "In Progress"** - Already assigned to an agent
+- **Status: "Blocked"** - External dependencies preventing work
 
 ## Field Assignments
 
@@ -167,13 +157,14 @@ For each issue, evaluate:
 ## Special Handling
 
 **Good first issue + AI-ready:**
-- Project: "AI Agent Ready"
+- Project: "${{ github.event.inputs.project_url }}"
 - Status: "Ready"
 - Priority: "High" (great for demonstrating AI agent capabilities)
 - Add label suggestion: `ai-agent-friendly`
 
 **Complex issue with AI-suitable sub-tasks:**
-- Project: "Human Review Required"
+- Project: "${{ github.event.inputs.project_url }}"
+- Status: "Human Review"
 - Add comment suggesting breaking into smaller, AI-ready tasks
 - Identify which parts could be AI-agent-ready
 
@@ -187,7 +178,7 @@ For each issue you want to add to a project board, output a safe-output item wit
 ```json
 {
   "type": "update_project",
-  "project": "AI Agent Ready",
+  "project": "${{ github.event.inputs.project_url }}",
   "content_type": "issue",
   "content_number": 123,
   "fields": {
@@ -200,10 +191,12 @@ For each issue you want to add to a project board, output a safe-output item wit
 }
 ```
 
-**Project specification:**
-- Project name: `"AI Agent Ready"` (creates if doesn't exist)
-- Project number: `42`
-- Project URL: `"https://github.com/users/username/projects/42"`
+**IMPORTANT: Use project URL "${{ github.event.inputs.project_url }}" for all project board assignments.**
+
+**Project specification options:**
+- Project URL: `"${{ github.event.inputs.project_url }}"` (RECOMMENDED - most explicit)
+- Project number: `"24"` (works if owner account matches repository owner)
+- Project name: `"AI Agent Ready"` (only works if project already exists and name is unique)
 
 **Content types:**
 - `"issue"` - Add/update an issue on the board
@@ -244,17 +237,14 @@ For each issue, provide:
 1. **AI-Readiness Assessment** (1-2 sentences)
    - What makes this suitable/unsuitable for AI agents?
    
-2. **Project Board Decision** (1 sentence)
-   - Which board and why?
-   
-3. **Field Rationale** (bullet points)
+2. **Field Rationale** (bullet points)
    - AI-Readiness Score: [score + brief reason]
    - Status: [status + brief reason]
    - Effort: [estimate + brief reason]
    - AI Agent Type: [type + brief reason]
    - Priority: [priority + brief reason]
 
-4. **Assignment Decision**
+3. **Assignment Decision**
    - If score ≥ 9: "Assigning to @copilot for immediate work"
    - If score 5-8: "Needs [specific clarifications] before assignment"
    - If score < 5: "Requires human review - [specific reasons]"
@@ -269,14 +259,14 @@ For each issue, provide:
 
 ## Workflow Steps
 
-1. **Fetch Issues**: Use GitHub MCP to query up to 10 most recent open issues
+1. **Fetch Issues**: Use GitHub MCP to query up to ${{ github.event.inputs.max_issues }} most recent open issues (default: 10)
 2. **Score Each Issue**: Evaluate AI-readiness based on the criteria above
-3. **Route to Project Boards**: For each issue, output an `update_project` safe-output item to add it to the appropriate project board with field assignments
+3. **Route to Project Board**: For each issue, output an `update_project` safe-output item with `"project": "${{ github.event.inputs.project_url }}"` to add it to the project board with field assignments
 
 ## Execution Notes
 
-- This workflow runs every 4 hours automatically
-- Process maximum 10 open issues per run
-- All issues are routed to appropriate project boards based on their AI-readiness score
-- Project boards are created automatically if they don't exist
+- This workflow runs every 4 hours automatically (or manually with custom parameters)
+- Input defaults: max_issues=10, project_url=https://github.com/users/mnkiefer/projects/24
+- All issues are routed to the project board with differentiation via Status field
 - Custom fields are created automatically if they don't exist
+- User projects must exist before workflow runs (cannot auto-create)
