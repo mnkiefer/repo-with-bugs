@@ -1251,12 +1251,9 @@ jobs:
           }
           ```
           
-          **IMPORTANT: Use project URL "${GH_AW_EXPR_7B9A5317}" for all project board assignments.**
+          **CRITICAL: You MUST use the EXACT full project URL "${GH_AW_EXPR_7B9A5317}" for the "project" field.**
           
-          **Project specification options:**
-          - Project URL: `"${GH_AW_EXPR_7B9A5317}"` (RECOMMENDED - most explicit)
-          - Project number: `"24"` (works if owner account matches repository owner)
-          - Project name: `"AI Agent Ready"` (only works if project already exists and name is unique)
+          Do NOT use just the number (like "24") or a name - you MUST use the complete URL as shown in the example above.
           
           **Content types:**
           - `"issue"` - Add/update an issue on the board

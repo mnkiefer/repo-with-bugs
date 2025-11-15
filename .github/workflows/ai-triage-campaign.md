@@ -191,12 +191,9 @@ For each issue you want to add to a project board, output a safe-output item wit
 }
 ```
 
-**IMPORTANT: Use project URL "${{ github.event.inputs.project_url }}" for all project board assignments.**
+**CRITICAL: You MUST use the EXACT full project URL "${{ github.event.inputs.project_url }}" for the "project" field.**
 
-**Project specification options:**
-- Project URL: `"${{ github.event.inputs.project_url }}"` (RECOMMENDED - most explicit)
-- Project number: `"24"` (works if owner account matches repository owner)
-- Project name: `"AI Agent Ready"` (only works if project already exists and name is unique)
+Do NOT use just the number (like "24") or a name - you MUST use the complete URL as shown in the example above.
 
 **Content types:**
 - `"issue"` - Add/update an issue on the board
