@@ -4184,6 +4184,9 @@ jobs:
               return { success: true, items: validatedOutput.items };
             }
             function parseProjectInput(projectInput) {
+              if (!projectInput || typeof projectInput !== 'string') {
+                throw new Error(`Invalid project input: expected string, got ${typeof projectInput}. The "project" field is required and must be a GitHub project URL, number, or name.`);
+              }
               const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
               if (urlMatch) {
                 return {
