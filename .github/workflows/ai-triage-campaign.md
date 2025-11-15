@@ -20,8 +20,10 @@ engine: copilot
 tools:
   github:
     mode: remote
-    toolsets: [repos]
+    toolsets: [repos, issues]
 safe-outputs:
+  create-issue:
+    max: 5
   update-project:
     max: 20
   missing-tool:
