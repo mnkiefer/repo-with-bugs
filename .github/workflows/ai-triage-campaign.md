@@ -16,15 +16,11 @@ permissions:
 # For organization-level projects, use a PAT with 'project' scope:
 # github-token: ${{ secrets.PROJECT_PAT }}
 
-safe-outputs:
-  update-project:
-    max: 10
-
 engine: claude
 tools:
   github:
     mode: remote
-    toolsets: [repos, issues]
+    toolsets: [repos, issues, projects]
 ---
 
 You are an AI-focused issue triage bot that identifies issues AI agents can solve efficiently and routes them appropriately.
@@ -182,7 +178,7 @@ For each issue, evaluate:
 
 ## Output Format
 
-Use the `update-project` tool with this structure:
+Use the GitHub MCP `update_project_item` tool to add issues to project boards with this structure:
 
 ```json
 {
