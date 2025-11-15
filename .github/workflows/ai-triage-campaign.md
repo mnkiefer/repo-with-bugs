@@ -16,7 +16,7 @@ permissions:
 # For organization-level projects, use a PAT with 'project' scope:
 # github-token: ${{ secrets.PROJECT_PAT }}
 
-engine: claude
+engine: copilot
 tools:
   github:
     mode: remote
