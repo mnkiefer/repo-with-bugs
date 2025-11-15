@@ -19,7 +19,7 @@ permissions:
 engine: copilot
 tools:
   github:
-    mode: remote
+    mode: local
     github-token: ${{ secrets.GITHUB_TOKEN }}
     toolsets: [repos, issues]
 safe-outputs:
