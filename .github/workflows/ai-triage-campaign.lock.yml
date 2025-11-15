@@ -10,13 +10,10 @@
 # graph LR
 #   activation["activation"]
 #   agent["agent"]
-#   create_issue["create_issue"]
 #   detection["detection"]
 #   missing_tool["missing_tool"]
 #   update_project["update_project"]
 #   activation --> agent
-#   agent --> create_issue
-#   detection --> create_issue
 #   agent --> detection
 #   agent --> missing_tool
 #   detection --> missing_tool
@@ -348,7 +345,7 @@ jobs:
         run: |
           mkdir -p /tmp/gh-aw/safeoutputs
           cat > /tmp/gh-aw/safeoutputs/config.json << 'EOF'
-          {"create_issue":{"max":5},"missing_tool":{},"update_project":{"max":20}}
+          {"missing_tool":{},"update_project":{"max":20}}
           EOF
           cat > /tmp/gh-aw/safeoutputs/mcp-server.cjs << 'EOF'
             const fs = require("fs");
@@ -880,6 +877,36 @@ jobs:
                     item_number: {
                       type: "number",
                       description: "Issue or PR number (optional for current context)",
+                    },
+                  },
+                  additionalProperties: false,
+                },
+              },
+              {
+                name: "update_project",
+                description: "Add an issue or pull request to a GitHub project with specified field values",
+                inputSchema: {
+                  type: "object",
+                  required: ["project", "content_type", "content_number"],
+                  properties: {
+                    project: {
+                      type: "string",
+                      description: "Project URL (e.g., https://github.com/users/monalisa/projects/42)",
+                    },
+                    content_type: {
+                      type: "string",
+                      enum: ["issue", "pull_request"],
+                      description: "Type of content to add to the project",
+                    },
+                    content_number: {
+                      type: ["number", "string"],
+                      description: "Issue or pull request number",
+                    },
+                    fields: {
+                      type: "object",
+                      description:
+                        "Project field values to set (e.g., Status, Priority, Complexity, Impact, Classification). Field names and values must match project configuration.",
+                      additionalProperties: true,
                     },
                   },
                   additionalProperties: false,
@@ -1493,17 +1520,21 @@ jobs:
           
           ---
           
-          ## Creating an Issue, Reporting Missing Tools or Functionality
+          ## Reporting Missing Tools or Functionality
           
           **IMPORTANT**: To do the actions mentioned in the header of this section, use the **safeoutputs** tools, do NOT attempt to use `gh`, do NOT attempt to use the GitHub API. You don't have write access to the GitHub repo.
-          
-          **Creating an Issue**
-          
-          To create an issue, use the create-issue tool from safeoutputs
           
           **Reporting Missing Tools or Functionality**
           
           To report a missing tool use the missing-tool tool from safeoutputs.
+          
+          **Managing Project Boards**
+          
+          To manage GitHub Project boards (add issues/PRs, update fields, create projects):
+          - Use the update-project tool from safeoutputs
+          - Specify the project by name or number
+          - Provide issue/PR numbers to add to the board
+          - Optionally update custom fields (Status, Priority, Sprint, etc.)
           
           PROMPT_EOF
       - name: Append GitHub context to prompt
@@ -2082,6 +2113,8 @@ jobs:
                     return 40;
                   case "upload_asset":
                     return 10;
+                  case "update_project":
+                    return 15;
                   default:
                     return 1;
                 }
@@ -2680,6 +2713,69 @@ jobs:
                       item.message = sanitizeContent(item.message, 2048);
                       if (item.ruleIdSuffix) {
                         item.ruleIdSuffix = sanitizeContent(item.ruleIdSuffix, 128);
+                      }
+                      break;
+                    case "update_project":
+                      if (!item.project || typeof item.project !== "string") {
+                        errors.push(`Line ${i + 1}: update-project requires a 'project' string field`);
+                        continue;
+                      }
+                      item.project = sanitizeContent(item.project, 512);
+                      if (item.create_if_missing !== undefined && typeof item.create_if_missing !== "boolean") {
+                        errors.push(`Line ${i + 1}: update-project 'create_if_missing' must be a boolean`);
+                        continue;
+                      }
+                      if (item.description !== undefined) {
+                        if (typeof item.description !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'description' must be a string`);
+                          continue;
+                        }
+                        item.description = sanitizeContent(item.description, 512);
+                      }
+                      if (item.campaign_id !== undefined) {
+                        if (typeof item.campaign_id !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'campaign_id' must be a string`);
+                          continue;
+                        }
+                        item.campaign_id = sanitizeContent(item.campaign_id, 128);
+                      }
+                      if (item.content_type !== undefined) {
+                        if (typeof item.content_type !== "string" || !["issue", "pull_request", "draft"].includes(item.content_type)) {
+                          errors.push(`Line ${i + 1}: update-project 'content_type' must be 'issue', 'pull_request', or 'draft'`);
+                          continue;
+                        }
+                      }
+                      if (item.content_number !== undefined) {
+                        const contentNumValidation = validateIssueOrPRNumber(item.content_number, "update-project 'content_number'", i + 1);
+                        if (!contentNumValidation.isValid) {
+                          if (contentNumValidation.error) errors.push(contentNumValidation.error);
+                          continue;
+                        }
+                      }
+                      if (item.title !== undefined) {
+                        if (typeof item.title !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'title' must be a string`);
+                          continue;
+                        }
+                        item.title = sanitizeContent(item.title, 128);
+                      }
+                      if (item.body !== undefined) {
+                        if (typeof item.body !== "string") {
+                          errors.push(`Line ${i + 1}: update-project 'body' must be a string`);
+                          continue;
+                        }
+                        item.body = sanitizeContent(item.body, maxBodyLength);
+                      }
+                      if (item.fields !== undefined) {
+                        if (typeof item.fields !== "object" || Array.isArray(item.fields)) {
+                          errors.push(`Line ${i + 1}: update-project 'fields' must be an object`);
+                          continue;
+                        }
+                        for (const [key, value] of Object.entries(item.fields)) {
+                          if (typeof value === "string") {
+                            item.fields[key] = sanitizeContent(value, 512);
+                          }
+                        }
                       }
                       break;
                     default:
@@ -3498,359 +3594,6 @@ jobs:
               main();
             }
 
-  create_issue:
-    needs:
-      - agent
-      - detection
-    if: >
-      (((!cancelled()) && (needs.agent.result != 'skipped')) && (contains(needs.agent.outputs.output_types, 'create_issue'))) &&
-      (needs.detection.outputs.success == 'true')
-    runs-on: ubuntu-slim
-    permissions:
-      contents: read
-      issues: write
-    timeout-minutes: 10
-    outputs:
-      issue_number: ${{ steps.create_issue.outputs.issue_number }}
-      issue_url: ${{ steps.create_issue.outputs.issue_url }}
-    steps:
-      - name: Download agent output artifact
-        continue-on-error: true
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
-        with:
-          name: agent_output.json
-          path: /tmp/gh-aw/safeoutputs/
-      - name: Setup agent output environment variable
-        run: |
-          mkdir -p /tmp/gh-aw/safeoutputs/
-          find "/tmp/gh-aw/safeoutputs/" -type f -print
-          echo "GH_AW_AGENT_OUTPUT=/tmp/gh-aw/safeoutputs/agent_output.json" >> "$GITHUB_ENV"
-      - name: Create Output Issue
-        id: create_issue
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "AI Triage Campaign"
-        with:
-          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
-          script: |
-            function sanitizeLabelContent(content) {
-              if (!content || typeof content !== "string") {
-                return "";
-              }
-              let sanitized = content.trim();
-              sanitized = sanitized.replace(/\x1b\[[0-9;]*[mGKH]/g, "");
-              sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-              sanitized = sanitized.replace(
-                /(^|[^\w`])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?(?:\/[A-Za-z0-9._-]+)?)/g,
-                (_m, p1, p2) => `${p1}\`@${p2}\``
-              );
-              sanitized = sanitized.replace(/[<>&'"]/g, "");
-              return sanitized.trim();
-            }
-            const fs = require("fs");
-            function loadAgentOutput() {
-              const agentOutputFile = process.env.GH_AW_AGENT_OUTPUT;
-              if (!agentOutputFile) {
-                core.info("No GH_AW_AGENT_OUTPUT environment variable found");
-                return { success: false };
-              }
-              let outputContent;
-              try {
-                outputContent = fs.readFileSync(agentOutputFile, "utf8");
-              } catch (error) {
-                const errorMessage = `Error reading agent output file: ${error instanceof Error ? error.message : String(error)}`;
-                core.setFailed(errorMessage);
-                return { success: false, error: errorMessage };
-              }
-              if (outputContent.trim() === "") {
-                core.info("Agent output content is empty");
-                return { success: false };
-              }
-              core.info(`Agent output content length: ${outputContent.length}`);
-              let validatedOutput;
-              try {
-                validatedOutput = JSON.parse(outputContent);
-              } catch (error) {
-                const errorMessage = `Error parsing agent output JSON: ${error instanceof Error ? error.message : String(error)}`;
-                core.setFailed(errorMessage);
-                return { success: false, error: errorMessage };
-              }
-              if (!validatedOutput.items || !Array.isArray(validatedOutput.items)) {
-                core.info("No valid items found in agent output");
-                return { success: false };
-              }
-              return { success: true, items: validatedOutput.items };
-            }
-            async function generateStagedPreview(options) {
-              const { title, description, items, renderItem } = options;
-              let summaryContent = `## 🎭 Staged Mode: ${title} Preview\n\n`;
-              summaryContent += `${description}\n\n`;
-              for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                summaryContent += renderItem(item, i);
-                summaryContent += "---\n\n";
-              }
-              try {
-                await core.summary.addRaw(summaryContent).write();
-                core.info(summaryContent);
-                core.info(`📝 ${title} preview written to step summary`);
-              } catch (error) {
-                core.setFailed(error instanceof Error ? error : String(error));
-              }
-            }
-            function generateFooter(
-              workflowName,
-              runUrl,
-              workflowSource,
-              workflowSourceURL,
-              triggeringIssueNumber,
-              triggeringPRNumber,
-              triggeringDiscussionNumber
-            ) {
-              let footer = `\n\n> AI generated by [${workflowName}](${runUrl})`;
-              if (triggeringIssueNumber) {
-                footer += ` for #${triggeringIssueNumber}`;
-              } else if (triggeringPRNumber) {
-                footer += ` for #${triggeringPRNumber}`;
-              } else if (triggeringDiscussionNumber) {
-                footer += ` for discussion #${triggeringDiscussionNumber}`;
-              }
-              if (workflowSource && workflowSourceURL) {
-                footer += `\n>\n> To add this workflow in your repository, run \`gh aw add ${workflowSource}\`. See [usage guide](https://githubnext.github.io/gh-aw/tools/cli/).`;
-              }
-              footer += "\n";
-              return footer;
-            }
-            function getCampaign(format) {
-              const campaign = process.env.GH_AW_CAMPAIGN || "";
-              if (campaign) {
-                core.info(`Campaign: ${campaign}`);
-                return format === "markdown" ? `\n\n<!-- campaign: ${campaign} -->` : campaign;
-              }
-              return "";
-            }
-            async function main() {
-              core.setOutput("issue_number", "");
-              core.setOutput("issue_url", "");
-              const isStaged = process.env.GH_AW_SAFE_OUTPUTS_STAGED === "true";
-              const result = loadAgentOutput();
-              if (!result.success) {
-                return;
-              }
-              const createIssueItems = result.items.filter(item => item.type === "create_issue");
-              if (createIssueItems.length === 0) {
-                core.info("No create-issue items found in agent output");
-                return;
-              }
-              core.info(`Found ${createIssueItems.length} create-issue item(s)`);
-              if (isStaged) {
-                await generateStagedPreview({
-                  title: "Create Issues",
-                  description: "The following issues would be created if staged mode was disabled:",
-                  items: createIssueItems,
-                  renderItem: (item, index) => {
-                    let content = `### Issue ${index + 1}\n`;
-                    content += `**Title:** ${item.title || "No title provided"}\n\n`;
-                    if (item.body) {
-                      content += `**Body:**\n${item.body}\n\n`;
-                    }
-                    if (item.labels && item.labels.length > 0) {
-                      content += `**Labels:** ${item.labels.join(", ")}\n\n`;
-                    }
-                    return content;
-                  },
-                });
-                return;
-              }
-              const parentIssueNumber = context.payload?.issue?.number;
-              const triggeringIssueNumber =
-                context.payload?.issue?.number && !context.payload?.issue?.pull_request ? context.payload.issue.number : undefined;
-              const triggeringPRNumber =
-                context.payload?.pull_request?.number || (context.payload?.issue?.pull_request ? context.payload.issue.number : undefined);
-              const triggeringDiscussionNumber = context.payload?.discussion?.number;
-              const labelsEnv = process.env.GH_AW_ISSUE_LABELS;
-              let envLabels = labelsEnv
-                ? labelsEnv
-                    .split(",")
-                    .map(label => label.trim())
-                    .filter(label => label)
-                : [];
-              const createdIssues = [];
-              for (let i = 0; i < createIssueItems.length; i++) {
-                const createIssueItem = createIssueItems[i];
-                core.info(
-                  `Processing create-issue item ${i + 1}/${createIssueItems.length}: title=${createIssueItem.title}, bodyLength=${createIssueItem.body.length}`
-                );
-                core.info(`Debug: createIssueItem.parent = ${JSON.stringify(createIssueItem.parent)}`);
-                core.info(`Debug: parentIssueNumber from context = ${JSON.stringify(parentIssueNumber)}`);
-                const effectiveParentIssueNumber = createIssueItem.parent !== undefined ? createIssueItem.parent : parentIssueNumber;
-                core.info(`Debug: effectiveParentIssueNumber = ${JSON.stringify(effectiveParentIssueNumber)}`);
-                if (effectiveParentIssueNumber && createIssueItem.parent !== undefined) {
-                  core.info(`Using explicit parent issue number from item: #${effectiveParentIssueNumber}`);
-                }
-                let labels = [...envLabels];
-                if (createIssueItem.labels && Array.isArray(createIssueItem.labels)) {
-                  labels = [...labels, ...createIssueItem.labels];
-                }
-                labels = labels
-                  .filter(label => !!label)
-                  .map(label => String(label).trim())
-                  .filter(label => label)
-                  .map(label => sanitizeLabelContent(label))
-                  .filter(label => label)
-                  .map(label => (label.length > 64 ? label.substring(0, 64) : label))
-                  .filter((label, index, arr) => arr.indexOf(label) === index);
-                let title = createIssueItem.title ? createIssueItem.title.trim() : "";
-                let bodyLines = createIssueItem.body.split("\n");
-                if (!title) {
-                  title = createIssueItem.body || "Agent Output";
-                }
-                const titlePrefix = process.env.GH_AW_ISSUE_TITLE_PREFIX;
-                if (titlePrefix && !title.startsWith(titlePrefix)) {
-                  title = titlePrefix + title;
-                }
-                if (effectiveParentIssueNumber) {
-                  core.info("Detected issue context, parent issue #" + effectiveParentIssueNumber);
-                  bodyLines.push(`Related to #${effectiveParentIssueNumber}`);
-                }
-                const workflowName = process.env.GH_AW_WORKFLOW_NAME || "Workflow";
-                const workflowSource = process.env.GH_AW_WORKFLOW_SOURCE || "";
-                const workflowSourceURL = process.env.GH_AW_WORKFLOW_SOURCE_URL || "";
-                const runId = context.runId;
-                const githubServer = process.env.GITHUB_SERVER_URL || "https://github.com";
-                const runUrl = context.payload.repository
-                  ? `${context.payload.repository.html_url}/actions/runs/${runId}`
-                  : `${githubServer}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
-                const fingerprintComment = getCampaign("markdown");
-                if (fingerprintComment) {
-                  bodyLines.push(fingerprintComment);
-                }
-                bodyLines.push(
-                  ``,
-                  ``,
-                  generateFooter(
-                    workflowName,
-                    runUrl,
-                    workflowSource,
-                    workflowSourceURL,
-                    triggeringIssueNumber,
-                    triggeringPRNumber,
-                    triggeringDiscussionNumber
-                  ).trimEnd(),
-                  ""
-                );
-                const body = bodyLines.join("\n").trim();
-                core.info(`Creating issue with title: ${title}`);
-                core.info(`Labels: ${labels}`);
-                core.info(`Body length: ${body.length}`);
-                try {
-                  const { data: issue } = await github.rest.issues.create({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    title: title,
-                    body: body,
-                    labels: labels,
-                  });
-                  core.info("Created issue #" + issue.number + ": " + issue.html_url);
-                  createdIssues.push(issue);
-                  core.info(`Debug: About to check if sub-issue linking is needed. effectiveParentIssueNumber = ${effectiveParentIssueNumber}`);
-                  if (effectiveParentIssueNumber) {
-                    core.info(`Attempting to link issue #${issue.number} as sub-issue of #${effectiveParentIssueNumber}`);
-                    try {
-                      core.info(`Fetching node ID for parent issue #${effectiveParentIssueNumber}...`);
-                      const getIssueNodeIdQuery = `
-                        query($owner: String!, $repo: String!, $issueNumber: Int!) {
-                          repository(owner: $owner, name: $repo) {
-                            issue(number: $issueNumber) {
-                              id
-                            }
-                          }
-                        }
-                      `;
-                      const parentResult = await github.graphql(getIssueNodeIdQuery, {
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issueNumber: effectiveParentIssueNumber,
-                      });
-                      const parentNodeId = parentResult.repository.issue.id;
-                      core.info(`Parent issue node ID: ${parentNodeId}`);
-                      core.info(`Fetching node ID for child issue #${issue.number}...`);
-                      const childResult = await github.graphql(getIssueNodeIdQuery, {
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issueNumber: issue.number,
-                      });
-                      const childNodeId = childResult.repository.issue.id;
-                      core.info(`Child issue node ID: ${childNodeId}`);
-                      core.info(`Executing addSubIssue mutation...`);
-                      const addSubIssueMutation = `
-                        mutation($issueId: ID!, $subIssueId: ID!) {
-                          addSubIssue(input: {
-                            issueId: $issueId,
-                            subIssueId: $subIssueId
-                          }) {
-                            subIssue {
-                              id
-                              number
-                            }
-                          }
-                        }
-                      `;
-                      await github.graphql(addSubIssueMutation, {
-                        issueId: parentNodeId,
-                        subIssueId: childNodeId,
-                      });
-                      core.info("✓ Successfully linked issue #" + issue.number + " as sub-issue of #" + effectiveParentIssueNumber);
-                    } catch (error) {
-                      core.info(`Warning: Could not link sub-issue to parent: ${error instanceof Error ? error.message : String(error)}`);
-                      core.info(`Error details: ${error instanceof Error ? error.stack : String(error)}`);
-                      try {
-                        core.info(`Attempting fallback: adding comment to parent issue #${effectiveParentIssueNumber}...`);
-                        await github.rest.issues.createComment({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          issue_number: effectiveParentIssueNumber,
-                          body: `Created related issue: #${issue.number}`,
-                        });
-                        core.info("✓ Added comment to parent issue #" + effectiveParentIssueNumber + " (sub-issue linking not available)");
-                      } catch (commentError) {
-                        core.info(
-                          `Warning: Could not add comment to parent issue: ${commentError instanceof Error ? commentError.message : String(commentError)}`
-                        );
-                      }
-                    }
-                  } else {
-                    core.info(`Debug: No parent issue number set, skipping sub-issue linking`);
-                  }
-                  if (i === createIssueItems.length - 1) {
-                    core.setOutput("issue_number", issue.number);
-                    core.setOutput("issue_url", issue.html_url);
-                  }
-                } catch (error) {
-                  const errorMessage = error instanceof Error ? error.message : String(error);
-                  if (errorMessage.includes("Issues has been disabled in this repository")) {
-                    core.info(`⚠ Cannot create issue "${title}": Issues are disabled for this repository`);
-                    core.info("Consider enabling issues in repository settings if you want to create issues automatically");
-                    continue;
-                  }
-                  core.error(`✗ Failed to create issue "${title}": ${errorMessage}`);
-                  throw error;
-                }
-              }
-              if (createdIssues.length > 0) {
-                let summaryContent = "\n\n## GitHub Issues\n";
-                for (const issue of createdIssues) {
-                  summaryContent += `- Issue #${issue.number}: [${issue.title}](${issue.html_url})\n`;
-                }
-                await core.summary.addRaw(summaryContent).write();
-              }
-              core.info(`Successfully created ${createdIssues.length} issue(s)`);
-            }
-            (async () => {
-              await main();
-            })();
-
   detection:
     needs: agent
     if: needs.agent.outputs.output_types != '' || needs.agent.outputs.has_patch == 'true'
@@ -4302,42 +4045,30 @@ jobs:
             }
             function parseProjectInput(projectInput) {
               const urlMatch = projectInput.match(/github\.com\/(?:users|orgs)\/[^/]+\/projects\/(\d+)/);
-              if (urlMatch) {
-                return {
-                  projectNumber: urlMatch[1],
-                  projectName: null,
-                };
-              }
+              if (urlMatch) return { projectNumber: urlMatch[1], projectName: null };
               return {
                 projectNumber: /^\d+$/.test(projectInput) ? projectInput : null,
-                projectName: /^\d+$/.test(projectInput) ? null : projectInput,
+                projectName: /^\d+$/.test(projectInput) ? null : projectInput
               };
             }
             function generateCampaignId(projectName) {
-              const slug = projectName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .substring(0, 30);
-              const timestamp = Date.now().toString(36).substring(0, 8);
-              return `${slug}-${timestamp}`;
+              const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").substring(0, 30);
+              return `${slug}-${Date.now().toString(36).substring(0, 8)}`;
             }
             async function updateProject(output) {
               const { owner, repo } = context.repo;
               const { projectNumber: parsedProjectNumber, projectName: parsedProjectName } = parseProjectInput(output.project);
               const displayName = parsedProjectName || parsedProjectNumber || output.project;
               const campaignId = output.campaign_id || generateCampaignId(displayName);
+              core.info(`Campaign: ${campaignId}, Project: ${output.project}`);
               let githubClient = github;
               if (process.env.PROJECT_GITHUB_TOKEN) {
                 const { Octokit } = require("@octokit/rest");
                 const octokit = new Octokit({
                   auth: process.env.PROJECT_GITHUB_TOKEN,
-                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com",
+                  baseUrl: process.env.GITHUB_API_URL || "https://api.github.com"
                 });
-                githubClient = {
-                  graphql: octokit.graphql.bind(octokit),
-                  rest: octokit.rest,
-                };
+                githubClient = { graphql: octokit.graphql.bind(octokit), rest: octokit.rest };
               }
               try {
                 const repoResult = await githubClient.graphql(
@@ -4355,9 +4086,11 @@ jobs:
                 const repositoryId = repoResult.repository.id;
                 const ownerId = repoResult.repository.owner.id;
                 const ownerType = repoResult.repository.owner.__typename;
+                core.info(`Owner type: ${ownerType}, Owner ID: ${ownerId}`);
                 let projectId;
                 let projectNumber;
                 let existingProject = null;
+                core.info(`Searching ${ownerType.toLowerCase()} projects...`);
                 const ownerQuery =
                   ownerType === "User"
                     ? `query($login: String!) {
@@ -4392,6 +4125,7 @@ jobs:
                   return p.title === parsedProjectName;
                 });
                 if (existingProject) {
+                  core.info(`✓ Found project "${existingProject.title}" (#${existingProject.number})`);
                   try {
                     await githubClient.graphql(
                       `mutation($projectId: ID!, $repositoryId: ID!) {
@@ -4406,23 +4140,39 @@ jobs:
                       }`,
                       { projectId: existingProject.id, repositoryId }
                     );
+                    core.info(`✓ Ensured project is linked to repository`);
                   } catch (linkError) {
-                    if (!linkError.message || !linkError.message.includes("already linked")) {
-                      core.warning(`Could not link project: ${linkError.message}`);
+                    if (linkError.message && linkError.message.includes("already linked")) {
+                      core.info(`✓ Project already linked to repository`);
+                    } else {
+                      core.warning(`Could not link project to repository: ${linkError.message}`);
                     }
                   }
                 }
                 if (existingProject) {
                   projectId = existingProject.id;
                   projectNumber = existingProject.number;
+                  core.info(`✓ Using project: ${output.project} (#${projectNumber})`);
                 } else {
                   if (ownerType === "User") {
                     const projectDisplay = parsedProjectNumber ? `project #${parsedProjectNumber}` : `project "${parsedProjectName}"`;
+                    const manualUrl = `https://github.com/users/${owner}/projects/new`;
                     core.error(
-                      `Cannot find ${projectDisplay}. User projects must be created manually at https://github.com/users/${owner}/projects/new`
+                      `❌ Cannot find ${projectDisplay} on user account.\n\n` +
+                        `GitHub Actions cannot create projects on user accounts due to permission restrictions.\n\n` +
+                        `📋 To fix this:\n` +
+                        `  1. Verify the project exists and is accessible\n` +
+                        `  2. If it doesn't exist, create it at: ${manualUrl}\n` +
+                        `  3. Ensure it's linked to this repository\n` +
+                        `  4. Provide a valid PROJECT_GITHUB_TOKEN with 'project' scope\n` +
+                        `  5. Re-run this workflow\n\n` +
+                        `The workflow will then be able to add issues/PRs to the existing project.`
                     );
-                    throw new Error(`Cannot find ${projectDisplay} on user account.`);
+                    throw new Error(
+                      `Cannot find ${projectDisplay} on user account. Please verify it exists and you have the correct token permissions.`
+                    );
                   }
+                  core.info(`Creating new project: ${output.project}`);
                   const createResult = await githubClient.graphql(
                     `mutation($ownerId: ID!, $title: String!) {
                       createProjectV2(input: {
@@ -4458,7 +4208,8 @@ jobs:
                     }`,
                     { projectId, repositoryId }
                   );
-                  core.info(`✓ Created project: ${newProject.title}`);
+                  core.info(`✓ Created and linked project: ${newProject.title} (${newProject.url})`);
+                  core.info(`✓ Campaign ID stored in project: ${campaignId}`);
                   core.setOutput("project-id", projectId);
                   core.setOutput("project-number", projectNumber);
                   core.setOutput("project-url", newProject.url);
@@ -4474,6 +4225,7 @@ jobs:
                         : output.issue
                           ? "Issue"
                           : "PullRequest";
+                  core.info(`Adding/updating ${contentType} #${contentNumber} on project board`);
                   const contentQuery =
                     contentType === "Issue"
                       ? `query($owner: String!, $repo: String!, $number: Int!) {
@@ -4522,6 +4274,7 @@ jobs:
                   let itemId;
                   if (existingItem) {
                     itemId = existingItem.id;
+                    core.info(`✓ Item already on board`);
                   } else {
                     const addResult = await githubClient.graphql(
                       `mutation($projectId: ID!, $contentId: ID!) {
@@ -4537,18 +4290,22 @@ jobs:
                       { projectId, contentId }
                     );
                     itemId = addResult.addProjectV2ItemById.item.id;
+                    core.info(`✓ Added ${contentType} #${contentNumber} to project board`);
                     try {
+                      const campaignLabel = `campaign:${campaignId}`;
                       await githubClient.rest.issues.addLabels({
                         owner,
                         repo,
                         issue_number: contentNumber,
-                        labels: [`campaign:${campaignId}`],
+                        labels: [campaignLabel],
                       });
+                      core.info(`✓ Added campaign label: ${campaignLabel}`);
                     } catch (labelError) {
-                      core.warning(`Failed to add label: ${labelError.message}`);
+                      core.warning(`Failed to add campaign label: ${labelError.message}`);
                     }
                   }
                   if (output.fields && Object.keys(output.fields).length > 0) {
+                    core.info(`Updating custom fields...`);
                     const fieldsResult = await githubClient.graphql(
                       `query($projectId: ID!) {
                         node(id: $projectId) {
@@ -4578,6 +4335,7 @@ jobs:
                     for (const [fieldName, fieldValue] of Object.entries(output.fields)) {
                       let field = projectFields.find(f => f.name.toLowerCase() === fieldName.toLowerCase());
                       if (!field) {
+                        core.info(`Field "${fieldName}" not found, attempting to create it...`);
                         const isTextField =
                           fieldName.toLowerCase() === "classification" || (typeof fieldValue === "string" && fieldValue.includes("|"));
                         if (isTextField) {
@@ -4604,6 +4362,7 @@ jobs:
                               }
                             );
                             field = createFieldResult.createProjectV2Field.projectV2Field;
+                            core.info(`✓ Created text field "${fieldName}"`);
                           } catch (createError) {
                             core.warning(`Failed to create field "${fieldName}": ${createError.message}`);
                             continue;
@@ -4638,6 +4397,7 @@ jobs:
                               }
                             );
                             field = createFieldResult.createProjectV2Field.projectV2Field;
+                            core.info(`✓ Created single select field "${fieldName}" with option "${fieldValue}"`);
                           } catch (createError) {
                             core.warning(`Failed to create field "${fieldName}": ${createError.message}`);
                             continue;
@@ -4648,6 +4408,7 @@ jobs:
                       if (field.options) {
                         let option = field.options.find(o => o.name === fieldValue);
                         if (!option) {
+                          core.info(`Option "${fieldValue}" not found for field "${fieldName}", attempting to create it...`);
                           try {
                             const allOptions = [
                               ...field.options.map(o => ({ name: o.name, description: "" })),
@@ -4682,6 +4443,7 @@ jobs:
                             const updatedField = createOptionResult.updateProjectV2Field.projectV2Field;
                             option = updatedField.options.find(o => o.name === fieldValue);
                             field = updatedField; 
+                            core.info(`✓ Created option "${fieldValue}" for field "${fieldName}"`);
                           } catch (createError) {
                             core.warning(`Failed to create option "${fieldValue}": ${createError.message}`);
                             continue;
@@ -4716,10 +4478,12 @@ jobs:
                           value: valueToSet,
                         }
                       );
+                      core.info(`✓ Updated field "${fieldName}" = "${fieldValue}"`);
                     }
                   }
                   core.setOutput("item-id", itemId);
                 }
+                core.info(`✓ Project management completed successfully`);
               } catch (error) {
                 if (error.message && error.message.includes("does not have permission to create projects")) {
                   const usingCustomToken = !!process.env.PROJECT_GITHUB_TOKEN;
@@ -4748,15 +4512,21 @@ jobs:
               }
               const updateProjectItems = result.items.filter(item => item.type === "update_project");
               if (updateProjectItems.length === 0) {
+                core.info("No update-project items found in agent output");
                 return;
               }
+              core.info(`Processing ${updateProjectItems.length} update_project items`);
               for (let i = 0; i < updateProjectItems.length; i++) {
                 const output = updateProjectItems[i];
+                core.info(
+                  `\n[${i + 1}/${updateProjectItems.length}] Processing item: ${output.content_type || "project"} #${output.content_number || output.issue || output.pull_request || "N/A"}`
+                );
                 try {
                   await updateProject(output);
                 } catch (error) {
                   core.error(`Failed to process item ${i + 1}: ${error.message}`);
                 }
               }
+              core.info(`\n✓ Completed processing ${updateProjectItems.length} items`);
             })();
 

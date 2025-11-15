@@ -22,8 +22,6 @@ tools:
     mode: remote
     toolsets: [repos]
 safe-outputs:
-  create-issue:
-    max: 5
   update-project:
     max: 20
   missing-tool:
