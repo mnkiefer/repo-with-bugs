@@ -21,9 +21,9 @@ permissions:
   issues: read
   repository-projects: write
 
-# Important: GITHUB_TOKEN cannot access organization projects
-# For organization-level projects, use a PAT with 'project' scope:
-# github-token: ${{ secrets.PROJECT_PAT }}
+# Important: GITHUB_TOKEN cannot access private user projects or organization projects
+# You MUST create a PAT with 'project' scope and add it as a repository secret
+# Create PAT at: https://github.com/settings/tokens/new?scopes=project&description=Agentic%20Workflows%20Project%20Access
 
 engine: copilot
 tools:
@@ -34,6 +34,7 @@ tools:
 safe-outputs:
   update-project:
     max: 20
+    github-token: ${{ secrets.PROJECT_PAT }}
   missing-tool:
 ---
 
@@ -172,31 +173,19 @@ For each issue, evaluate:
 **Duplicate/similar patterns:**
 - If multiple similar issues exist, note they could be batch-processed by an AI agent
 
-## Output Format
+## How to Add Issues to the Project Board
 
-For each issue you want to add to a project board, output a safe-output item with this structure:
+For each issue you analyze, add it to the project board at:
+**https://github.com/users/mnkiefer/projects/24**
 
-```json
-{
-  "type": "update_project",
-  "project": "${{ github.event.inputs.project_url }}",
-  "content_type": "issue",
-  "content_number": 123,
-  "fields": {
-    "AI-Readiness Score": "9",
-    "Status": "Ready",
-    "Effort Estimate": "Small",
-    "AI Agent Type": "Code Generation",
-    "Priority": "High"
-  }
-}
-```
+When adding an issue to the project board, specify these custom field values:
+- **AI-Readiness Score**: Your calculated score (1-10)
+- **Status**: "Ready", "Needs Clarification", or "Human Review"
+- **Effort Estimate**: "Small", "Medium", "Large", or "X-Large"
+- **AI Agent Type**: The recommended agent type
+- **Priority**: "Critical", "High", "Medium", or "Low"
 
-**CRITICAL: You MUST use the EXACT full project URL for the "project" field.**
-
-The "project" field value MUST be: ${{ github.event.inputs.project_url }}
-
-Copy this value EXACTLY as-is, including "https://" and the full path.
+The project board URL must be the complete URL: `https://github.com/users/mnkiefer/projects/24`
 
 **Content types:**
 - `"issue"` - Add/update an issue on the board
