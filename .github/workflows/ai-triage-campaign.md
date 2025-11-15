@@ -20,7 +20,13 @@ engine: claude
 tools:
   github:
     mode: remote
-    toolsets: [repos, issues, projects]
+    toolsets: [repos]  # Only repos for querying issues
+safe-outputs:
+  create-issue:
+    max: 5
+  update-project:
+    max: 20
+  missing-tool:
 ---
 
 You are an AI-focused issue triage bot that identifies issues AI agents can solve efficiently and routes them appropriately.
