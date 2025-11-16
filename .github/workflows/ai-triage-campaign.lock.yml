@@ -4380,7 +4380,28 @@ jobs:
                 if (hasPullRequest) {
                   core.warning('Field "pull_request" deprecated; use "content_number" instead.');
                 }
-                if (contentNumber) {
+                let contentNumber = null;
+                if (hasContentNumber || hasIssue || hasPullRequest) {
+                  const rawContentNumber = hasContentNumber
+                    ? output.content_number
+                    : hasIssue
+                      ? output.issue
+                      : output.pull_request;
+                  const sanitizedContentNumber =
+                    rawContentNumber === undefined || rawContentNumber === null
+                      ? ""
+                      : typeof rawContentNumber === "number"
+                        ? rawContentNumber.toString()
+                        : String(rawContentNumber).trim();
+                  if (!sanitizedContentNumber) {
+                    core.warning("Content number field provided but empty; skipping project item update.");
+                  } else if (!/^\d+$/.test(sanitizedContentNumber)) {
+                    throw new Error(`Invalid content number "${rawContentNumber}". Provide a positive integer.`);
+                  } else {
+                    contentNumber = Number.parseInt(sanitizedContentNumber, 10);
+                  }
+                }
+                if (contentNumber !== null) {
                   const contentType =
                     output.content_type === "pull_request"
                       ? "PullRequest"
