@@ -4317,9 +4317,7 @@ jobs:
                 } else {
                   if (ownerType === "User") {
                     const projectDisplay = parsedProjectNumber ? `project #${parsedProjectNumber}` : `project "${parsedProjectName}"`;
-                    core.error(
-                      `Cannot find ${projectDisplay}. User projects must be created manually at https://github.com/users/${owner}/projects/new`
-                    );
+                      core.error(`Cannot find ${projectDisplay}. Create it manually at https://github.com/users/${owner}/projects/new.`);
                     throw new Error(`Cannot find ${projectDisplay} on user account.`);
                   }
                   const createResult = await githubClient.graphql(
@@ -4372,27 +4370,16 @@ jobs:
                 if (hasPullRequest) values.push({ key: "pull_request", value: output.pull_request });
                 if (values.length > 1) {
                   const uniqueValues = [...new Set(values.map(v => String(v.value)))];
-                  if (uniqueValues.length > 1) {
-                    core.warning(
-                      `Multiple content number fields are set with different values: ` +
-                      values.map(v => `${v.key}=${v.value}`).join(", ") +
-                      `. Using the first non-empty value in the order: content_number, issue, pull_request.`
-                    );
-                  } else {
-                    core.warning(
-                      `Multiple content number fields are set (all with value "${uniqueValues[0]}"): ` +
-                      values.map(v => v.key).join(", ") +
-                      `. Using the first non-empty value in the order: content_number, issue, pull_request.`
-                    );
-                  }
+                  const list = values.map(v => `${v.key}=${v.value}`).join(", ");
+                  const descriptor = uniqueValues.length > 1 ? "different values" : `same value "${uniqueValues[0]}"`;
+                  core.warning(`Multiple content number fields (${descriptor}): ${list}. Using priority content_number > issue > pull_request.`);
                 }
                 if (hasIssue) {
-                  core.warning('The "issue" field is deprecated. Use "content_number" instead.');
+                  core.warning('Field "issue" deprecated; use "content_number" instead.');
                 }
                 if (hasPullRequest) {
-                  core.warning('The "pull_request" field is deprecated. Use "content_number" instead.');
+                  core.warning('Field "pull_request" deprecated; use "content_number" instead.');
                 }
-                const contentNumber = output.content_number || output.issue || output.pull_request;
                 if (contentNumber) {
                   const contentType =
                     output.content_type === "pull_request"
@@ -4680,15 +4667,11 @@ jobs:
                   const usingCustomToken = !!process.env.PROJECT_GITHUB_TOKEN;
                   core.error(
                     `Failed to manage project: ${error.message}\n\n` +
-                      `💡 Troubleshooting:\n` +
-                      `  1. Create the project manually first at https://github.com/orgs/${owner}/projects/new\n` +
-                      `     Then the workflow can add items to it automatically.\n\n` +
-                      `  2. Or, add a Personal Access Token (PAT) with 'project' permissions:\n` +
-                      `     - Create a PAT at https://github.com/settings/tokens/new?scopes=project\n` +
-                      `     - Add it as a secret named PROJECT_GITHUB_TOKEN\n` +
-                      `     - Pass it to the workflow: PROJECT_GITHUB_TOKEN: \${{ secrets.PROJECT_GITHUB_TOKEN }}\n\n` +
-                      `  3. Ensure the workflow has 'projects: write' permission.\n\n` +
-                      `${usingCustomToken ? "⚠️  Note: Already using PROJECT_GITHUB_TOKEN but still getting permission error." : "📝 Currently using default GITHUB_TOKEN (no project create permissions)."}`
+                      `Troubleshooting:\n` +
+                      `  • Create the project manually at https://github.com/orgs/${owner}/projects/new.\n` +
+                      `  • Or supply a PAT with project scope via PROJECT_GITHUB_TOKEN.\n` +
+                      `  • Ensure the workflow grants projects: write.\n\n` +
+                      `${usingCustomToken ? "PROJECT_GITHUB_TOKEN is set but lacks access." : "Using default GITHUB_TOKEN without project create rights."}`
                   );
                 } else {
                   core.error(`Failed to manage project: ${error.message}`);
