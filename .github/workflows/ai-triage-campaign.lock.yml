@@ -238,7 +238,7 @@ jobs:
         with:
           node-version: '24'
       - name: Install GitHub Copilot CLI
-        run: npm install -g @github/copilot@0.0.355
+        run: npm install -g @github/copilot@0.0.358
       - name: Downloading container images
         run: |
           set -e
@@ -1524,7 +1524,7 @@ jobs:
               engine_name: "GitHub Copilot CLI",
               model: "",
               version: "",
-              agent_version: "0.0.355",
+              agent_version: "0.0.358",
               workflow_name: "AI Triage Campaign",
               experimental: false,
               supports_tools_allowlist: true,
@@ -2677,6 +2677,43 @@ jobs:
                 runLogParser,
               };
             }
+            function formatDuration(ms) {
+              if (!ms || ms <= 0) return "";
+              const seconds = Math.round(ms / 1000);
+              if (seconds < 60) {
+                return `${seconds}s`;
+              }
+              const minutes = Math.floor(seconds / 60);
+              const remainingSeconds = seconds % 60;
+              if (remainingSeconds === 0) {
+                return `${minutes}m`;
+              }
+              return `${minutes}m ${remainingSeconds}s`;
+            }
+            function formatBashCommand(command) {
+              if (!command) return "";
+              let formatted = command
+                .replace(/\n/g, " ") 
+                .replace(/\r/g, " ") 
+                .replace(/\t/g, " ") 
+                .replace(/\s+/g, " ") 
+                .trim(); 
+              formatted = formatted.replace(/`/g, "\\`");
+              const maxLength = 300;
+              if (formatted.length > maxLength) {
+                formatted = formatted.substring(0, maxLength) + "...";
+              }
+              return formatted;
+            }
+            function truncateString(str, maxLength) {
+              if (!str) return "";
+              if (str.length <= maxLength) return str;
+              return str.substring(0, maxLength) + "...";
+            }
+            function estimateTokens(text) {
+              if (!text) return 0;
+              return Math.ceil(text.length / 4);
+            }
             function main() {
               runLogParser({
                 parseLog: parseCopilotLog,
@@ -3335,23 +3372,6 @@ jobs:
               }
               return markdown;
             }
-            function estimateTokens(text) {
-              if (!text) return 0;
-              return Math.ceil(text.length / 4);
-            }
-            function formatDuration(ms) {
-              if (!ms || ms <= 0) return "";
-              const seconds = Math.round(ms / 1000);
-              if (seconds < 60) {
-                return `${seconds}s`;
-              }
-              const minutes = Math.floor(seconds / 60);
-              const remainingSeconds = seconds % 60;
-              if (remainingSeconds === 0) {
-                return `${minutes}m`;
-              }
-              return `${minutes}m ${remainingSeconds}s`;
-            }
             function formatToolUseWithDetails(toolUse, toolResult) {
               const toolName = toolUse.name;
               const input = toolUse.input || {};
@@ -3478,21 +3498,6 @@ jobs:
                 paramStrs.push("...");
               }
               return paramStrs.join(", ");
-            }
-            function formatBashCommand(command) {
-              if (!command) return "";
-              let formatted = command.replace(/\n/g, " ").replace(/\r/g, " ").replace(/\t/g, " ").replace(/\s+/g, " ").trim();
-              formatted = formatted.replace(/`/g, "\\`");
-              const maxLength = 300;
-              if (formatted.length > maxLength) {
-                formatted = formatted.substring(0, maxLength) + "...";
-              }
-              return formatted;
-            }
-            function truncateString(str, maxLength) {
-              if (!str) return "";
-              if (str.length <= maxLength) return str;
-              return str.substring(0, maxLength) + "...";
             }
             if (typeof module !== "undefined" && module.exports) {
               module.exports = {
@@ -3916,7 +3921,7 @@ jobs:
         with:
           node-version: '24'
       - name: Install GitHub Copilot CLI
-        run: npm install -g @github/copilot@0.0.355
+        run: npm install -g @github/copilot@0.0.358
       - name: Execute GitHub Copilot CLI
         id: agentic_execution
         # Copilot CLI tool arguments (sorted):
@@ -4358,6 +4363,35 @@ jobs:
                   core.setOutput("project-url", newProject.url);
                   core.setOutput("campaign-id", campaignId);
                 }
+                const hasContentNumber = output.content_number !== undefined && output.content_number !== null;
+                const hasIssue = output.issue !== undefined && output.issue !== null;
+                const hasPullRequest = output.pull_request !== undefined && output.pull_request !== null;
+                const values = [];
+                if (hasContentNumber) values.push({ key: "content_number", value: output.content_number });
+                if (hasIssue) values.push({ key: "issue", value: output.issue });
+                if (hasPullRequest) values.push({ key: "pull_request", value: output.pull_request });
+                if (values.length > 1) {
+                  const uniqueValues = [...new Set(values.map(v => String(v.value)))];
+                  if (uniqueValues.length > 1) {
+                    core.warning(
+                      `Multiple content number fields are set with different values: ` +
+                      values.map(v => `${v.key}=${v.value}`).join(", ") +
+                      `. Using the first non-empty value in the order: content_number, issue, pull_request.`
+                    );
+                  } else {
+                    core.warning(
+                      `Multiple content number fields are set (all with value "${uniqueValues[0]}"): ` +
+                      values.map(v => v.key).join(", ") +
+                      `. Using the first non-empty value in the order: content_number, issue, pull_request.`
+                    );
+                  }
+                }
+                if (hasIssue) {
+                  core.warning('The "issue" field is deprecated. Use "content_number" instead.');
+                }
+                if (hasPullRequest) {
+                  core.warning('The "pull_request" field is deprecated. Use "content_number" instead.');
+                }
                 const contentNumber = output.content_number || output.issue || output.pull_request;
                 if (contentNumber) {
                   const contentType =
@@ -4390,32 +4424,51 @@ jobs:
                     number: contentNumber,
                   });
                   const contentId = contentType === "Issue" ? contentResult.repository.issue.id : contentResult.repository.pullRequest.id;
-                  const existingItemsResult = await githubClient.graphql(
-                    `query($projectId: ID!) {
-                      node(id: $projectId) {
-                        ... on ProjectV2 {
-                          items(first: 100) {
-                            nodes {
-                              id
-                              content {
-                                ... on Issue {
+                  async function findExistingProjectItem(projectId, contentId) {
+                    let hasNextPage = true;
+                    let endCursor = null;
+                    while (hasNextPage) {
+                      const result = await githubClient.graphql(
+                        `query($projectId: ID!, $after: String) {
+                          node(id: $projectId) {
+                            ... on ProjectV2 {
+                              items(first: 100, after: $after) {
+                                nodes {
                                   id
+                                  content {
+                                    ... on Issue {
+                                      id
+                                    }
+                                    ... on PullRequest {
+                                      id
+                                    }
+                                  }
                                 }
-                                ... on PullRequest {
-                                  id
+                                pageInfo {
+                                  hasNextPage
+                                  endCursor
                                 }
                               }
                             }
                           }
-                        }
+                        }`,
+                        { projectId, after: endCursor }
+                      );
+                      const items = result.node.items.nodes;
+                      const found = items.find(item => item.content && item.content.id === contentId);
+                      if (found) {
+                        return found;
                       }
-                    }`,
-                    { projectId }
-                  );
-                  const existingItem = existingItemsResult.node.items.nodes.find(item => item.content && item.content.id === contentId);
+                      hasNextPage = result.node.items.pageInfo.hasNextPage;
+                      endCursor = result.node.items.pageInfo.endCursor;
+                    }
+                    return null;
+                  }
+                  const existingItem = await findExistingProjectItem(projectId, contentId);
                   let itemId;
                   if (existingItem) {
                     itemId = existingItem.id;
+                    core.info('✓ Item already on board');
                   } else {
                     const addResult = await githubClient.graphql(
                       `mutation($projectId: ID!, $contentId: ID!) {
@@ -4439,7 +4492,7 @@ jobs:
                         labels: [`campaign:${campaignId}`],
                       });
                     } catch (labelError) {
-                      core.warning(`Failed to add label: ${labelError.message}`);
+                      core.warning(`Failed to add campaign label: ${labelError.message}`);
                     }
                   }
                   if (output.fields && Object.keys(output.fields).length > 0) {
@@ -4470,7 +4523,11 @@ jobs:
                     );
                     const projectFields = fieldsResult.node.fields.nodes;
                     for (const [fieldName, fieldValue] of Object.entries(output.fields)) {
-                      let field = projectFields.find(f => f.name.toLowerCase() === fieldName.toLowerCase());
+                      const normalizedFieldName = fieldName
+                        .split(/[\s_-]+/)
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ');
+                      let field = projectFields.find(f => f.name.toLowerCase() === normalizedFieldName.toLowerCase());
                       if (!field) {
                         const isTextField =
                           fieldName.toLowerCase() === "classification" || (typeof fieldValue === "string" && fieldValue.includes("|"));
@@ -4485,11 +4542,11 @@ jobs:
                                 }) {
                                   projectV2Field {
                                     ... on ProjectV2Field {
-                                      id
-                                      name
-                                    }
-                                  }
-                                }
+                              {
+                                projectId,
+                                name: normalizedFieldName,
+                                dataType: "TEXT",
+                              }
                               }`,
                               {
                                 projectId,
@@ -4518,12 +4575,12 @@ jobs:
                                       name
                                       options {
                                         id
-                                        name
-                                      }
-                                    }
-                                  }
-                                }
-                              }`,
+                              {
+                                projectId,
+                                name: normalizedFieldName,
+                                dataType: "SINGLE_SELECT",
+                                options: [{ name: String(fieldValue), description: "", color: "GRAY" }],
+                              }
                               {
                                 projectId,
                                 name: fieldName,
@@ -4548,9 +4605,8 @@ jobs:
                               { name: String(fieldValue), description: "" },
                             ];
                             const createOptionResult = await githubClient.graphql(
-                              `mutation($projectId: ID!, $fieldId: ID!, $fieldName: String!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
+                              `mutation($fieldId: ID!, $fieldName: String!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
                                 updateProjectV2Field(input: {
-                                  projectId: $projectId,
                                   fieldId: $fieldId,
                                   name: $fieldName,
                                   singleSelectOptions: $options
@@ -4567,7 +4623,6 @@ jobs:
                                 }
                               }`,
                               {
-                                projectId,
                                 fieldId: field.id,
                                 fieldName: field.name,
                                 options: allOptions,
