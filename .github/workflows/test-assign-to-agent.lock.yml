@@ -3588,6 +3588,14 @@ jobs:
                     issue_number: issueNumber,
                   });
                   core.info(`Issue #${issueNumber} exists: "${issueResponse.data.title}"`);
+                  const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+                  if (!ghToken) {
+                    throw new Error("GH_TOKEN or GITHUB_TOKEN is required to assign agents");
+                  }
+                  await exec.exec("gh", ["issue", "edit", String(issueNumber), "--add-assignee", `@${agentName}`], {
+                    env: { ...process.env, GH_TOKEN: ghToken },
+                    cwd: process.env.GITHUB_WORKSPACE || process.cwd(),
+                  });
                   const mentionText = `@${agentName}`;
                   const commentBody = `${mentionText} has been assigned to this issue.`;
                   await github.rest.issues.createComment({
