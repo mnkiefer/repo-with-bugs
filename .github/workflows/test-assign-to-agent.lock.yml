@@ -3593,7 +3593,7 @@ jobs:
                     throw new Error("GH_TOKEN or GITHUB_TOKEN is required to assign agents");
                   }
                   await exec.exec("gh", ["issue", "edit", String(issueNumber), "--add-assignee", `@${agentName}`], {
-                    env: { ...process.env, GH_TOKEN: ghToken },
+                    env: { ...process.env, GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken },
                     cwd: process.env.GITHUB_WORKSPACE || process.cwd(),
                   });
                   const mentionText = `@${agentName}`;
