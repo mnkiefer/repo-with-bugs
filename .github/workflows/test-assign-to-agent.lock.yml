@@ -3467,6 +3467,7 @@ jobs:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
           GH_AW_AGENT_DEFAULT: "copilot"
           GH_AW_AGENT_MAX_COUNT: 5
+          GH_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -3589,9 +3590,11 @@ jobs:
                   });
                   core.info(`Issue #${issueNumber} exists: "${issueResponse.data.title}"`);
                   const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-                  if (!ghToken) {
+                  if (!ghToken || ghToken.trim() === "") {
+                    core.error(`Token check failed - GH_TOKEN: ${process.env.GH_TOKEN ? "set" : "not set"}, GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? "set" : "not set"}`);
                     throw new Error("GH_TOKEN or GITHUB_TOKEN is required to assign agents");
                   }
+                  core.info(`Using token to assign agent (GH_TOKEN: ${process.env.GH_TOKEN ? "yes" : "no"}, GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? "yes" : "no"})`);
                   await exec.exec("gh", ["issue", "edit", String(issueNumber), "--add-assignee", `@${agentName}`], {
                     env: { ...process.env, GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken },
                     cwd: process.env.GITHUB_WORKSPACE || process.cwd(),
