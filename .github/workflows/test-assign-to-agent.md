@@ -16,6 +16,11 @@ permissions:
   issues: write
   pull-requests: read
 
+# NOTE: This workflow requires GitHub Actions GITHUB_TOKEN with 'issues: write'.
+# Personal Access Tokens (PATs) will NOT work due to GraphQL API limitations.
+# The replaceActorsForAssignable mutation requires elevated permissions that
+# are only available via GitHub App tokens or GitHub Actions GITHUB_TOKEN.
+
 engine: copilot
 tools:
   github:
@@ -23,7 +28,7 @@ tools:
     toolsets: [default]
 
 safe-outputs:
-  github-token: ${{ secrets.COPILOT_GITHUB_TOKEN || secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+  github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
   assign-to-agent:
     max: 5
     default-agent: copilot
