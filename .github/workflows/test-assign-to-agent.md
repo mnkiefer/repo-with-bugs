@@ -12,14 +12,17 @@ on:
         type: string
 
 permissions:
-  contents: read
+  actions: write
+  contents: write
   issues: write
-  pull-requests: read
+  pull-requests: write
 
-# NOTE: This workflow requires GitHub Actions GITHUB_TOKEN with 'issues: write'.
-# Personal Access Tokens (PATs) will NOT work due to GraphQL API limitations.
-# The replaceActorsForAssignable mutation requires elevated permissions that
-# are only available via GitHub App tokens or GitHub Actions GITHUB_TOKEN.
+# NOTE: Assigning Copilot agents requires ALL of these permissions:
+# - actions: write
+# - contents: write
+# - issues: write
+# - pull-requests: write
+# Personal Access Tokens (PATs) will NOT work - must use GitHub Actions GITHUB_TOKEN.
 
 engine: copilot
 tools:
