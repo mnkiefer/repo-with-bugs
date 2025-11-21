@@ -31,7 +31,7 @@ tools:
     toolsets: [default]
 
 safe-outputs:
-  github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+  github-token: ${{ secrets.GITHUB_TOKEN }}
   assign-to-agent:
     max: 5
     default-agent: copilot
