@@ -322,7 +322,7 @@ h1 {
     font-weight: bold;
     cursor: pointer;
     /* BUG: Wrong position value */
-    position: relatve;
+    position: relative;
     top: -10px;
     right: -10px;
 }
