@@ -243,7 +243,10 @@ async function handleEditTask(e) {
 
 // Delete task
 async function deleteTask(id) {
-    // BUG: No confirmation dialog
+    // Show confirmation dialog
+    if (!confirm('Are you sure you want to delete this task?')) {
+        return;
+    }
     
     try {
         await fetch(`${API_URL}/tasks/${id}`, {
