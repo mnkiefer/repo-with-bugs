@@ -44,9 +44,7 @@ This workflow tests the `assign_to_agent` safe output feature, which allows AI a
 
 ## Task
 
-Output the assign_to_agent JSON only. Do not use GitHub tools or perform any operations yourself.
-
 **For workflow_dispatch:**
-Output: `{"type": "assign_to_agent", "issue_number": ${{ github.event.inputs.issue_number }}, "agent": "copilot"}`
+Assign the Copilot agent to issue #${{ github.event.inputs.issue_number }} using the `assign_to_agent` tool from the `safeoutputs` MCP server.
 
-The safe output script will handle the actual assignment.
+Do not use GitHub tools. The assign_to_agent tool will handle the actual assignment.
