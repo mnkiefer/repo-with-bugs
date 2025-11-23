@@ -47,27 +47,9 @@ This workflow tests the `assign_to_agent` safe output feature, which allows AI a
 
 ## Task
 
-You are testing the assign_to_agent feature. Based on the trigger:
+Output the assign_to_agent JSON only. Do not use GitHub tools or perform any operations yourself.
 
 **For workflow_dispatch:**
-- Assign agent "copilot" to issue #${{ github.event.inputs.issue_number }}
+Output: `{"type": "assign_to_agent", "issue_number": ${{ github.event.inputs.issue_number }}, "agent": "copilot"}`
 
-**For issue labeled events:**
-- If the issue has label "needs-agent", assign agent "copilot" to issue #${{ github.event.issue.number }}
-- If the issue has label "needs-review", assign agent "code-reviewer" to issue #${{ github.event.issue.number }}
-
-Use the `assign_to_agent` safe output with the following structure:
-```json
-{
-  "type": "assign_to_agent",
-  "issue_number": <number>,
-  "agent": "<agent-name>"
-}
-```
-
-**Important notes:**
-- `issue_number` is REQUIRED (will fail validation if missing)
-- `agent` is optional (defaults to "copilot" if not provided)
-- Only provide valid issue numbers from this repository
-
-After assigning, create a comment summarizing what you did.
+The safe output script will handle the actual assignment.
