@@ -17,22 +17,23 @@ permissions:
   issues: write
   pull-requests: write
 
-# NOTE: Assigning Copilot agents requires ALL of these:
-# 1. Workflow permissions (all four required):
-#    - actions: write
-#    - contents: write
-#    - issues: write
-#    - pull-requests: write
-# 2. GitHub Actions GITHUB_TOKEN (PATs will NOT work)
+# NOTE: Assigning Copilot agents requires:
+# 1. A Personal Access Token (PAT) with repo scope
+#    - The standard GITHUB_TOKEN does NOT have permission to assign bot agents
+#    - Create a PAT at: https://github.com/settings/tokens
+#    - Add it as a repository secret named COPILOT_GITHUB_TOKEN
+#    - Required scopes: repo (full control)
+# 
+# 2. All four workflow permissions declared above (for the safe output job)
+#
 # 3. Repository Settings > Actions > General > Workflow permissions:
 #    Must be set to "Read and write permissions"
-#    (Default "Read repository contents and packages permissions" is NOT sufficient)
 
 engine: copilot
 timeout-minutes: 5
 
 safe-outputs:
-  github-token: ${{ secrets.GITHUB_TOKEN }}
+  github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
   assign-to-agent:
     max: 5
     default-agent: copilot
