@@ -1,5 +1,9 @@
 # Buggy Application 🐛
 
+> [!NOTE]  
+> This is a **temporary repo** for **agentic work**. The bugs are **intentional** and meant for agents to work on.  
+> Please **no bug-fix contributions**, thanks!
+
 Welcome! This repository contains a simple task management application with **intentionally planted bugs** for you to find and report.
 
 A simple **Task Manager** web application that allows users to:
