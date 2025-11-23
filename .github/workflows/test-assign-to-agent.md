@@ -29,10 +29,7 @@ permissions:
 #    (Default "Read repository contents and packages permissions" is NOT sufficient)
 
 engine: copilot
-tools:
-  github:
-    mode: remote
-    toolsets: [default]
+timeout-minutes: 5
 
 safe-outputs:
   github-token: ${{ secrets.GITHUB_TOKEN }}
