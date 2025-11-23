@@ -17,12 +17,16 @@ permissions:
   issues: write
   pull-requests: write
 
-# NOTE: Assigning Copilot agents requires ALL of these permissions:
-# - actions: write
-# - contents: write
-# - issues: write
-# - pull-requests: write
-# Personal Access Tokens (PATs) will NOT work - must use GitHub Actions GITHUB_TOKEN.
+# NOTE: Assigning Copilot agents requires ALL of these:
+# 1. Workflow permissions (all four required):
+#    - actions: write
+#    - contents: write
+#    - issues: write
+#    - pull-requests: write
+# 2. GitHub Actions GITHUB_TOKEN (PATs will NOT work)
+# 3. Repository Settings > Actions > General > Workflow permissions:
+#    Must be set to "Read and write permissions"
+#    (Default "Read repository contents and packages permissions" is NOT sufficient)
 
 engine: copilot
 tools:
