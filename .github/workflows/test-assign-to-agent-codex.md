@@ -1,5 +1,5 @@
 ---
-name: Test Assign to Agent
+name: Test Assign to Agent Codex
 description: Test workflow for assign_to_agent safe output feature
 on:
   issues:

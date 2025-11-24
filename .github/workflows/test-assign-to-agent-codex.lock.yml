@@ -69,7 +69,7 @@
 #   - actions/upload-artifact@v5 (330a01c490aca151604b8cf639adc76d48f6c5d4)
 #     https://github.com/actions/upload-artifact/commit/330a01c490aca151604b8cf639adc76d48f6c5d4
 
-name: "Test Assign to Agent"
+name: "Test Assign to Agent Codex"
 "on":
   issues:
     types:
@@ -90,7 +90,7 @@ permissions:
 concurrency:
   group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number }}"
 
-run-name: "Test Assign to Agent"
+run-name: "Test Assign to Agent Codex"
 
 jobs:
   activation:
@@ -230,9 +230,9 @@ jobs:
           github.event.pull_request
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CODEX_API_KEY }}
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.CODEX_API_KEY }}
           script: |
             async function main() {
               const eventName = context.eventName;
@@ -975,7 +975,7 @@ jobs:
           
       - name: Setup MCPs
         env:
-          GITHUB_MCP_SERVER_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GITHUB_MCP_SERVER_TOKEN: ${{ secrets.CODEX_API_KEY }}
           GH_AW_SAFE_OUTPUTS: ${{ env.GH_AW_SAFE_OUTPUTS }}
         run: |
           mkdir -p /tmp/gh-aw/mcp-config
@@ -988,7 +988,7 @@ jobs:
           include_only = ["CODEX_API_KEY", "GH_AW_ASSETS_ALLOWED_EXTS", "GH_AW_ASSETS_BRANCH", "GH_AW_ASSETS_MAX_SIZE_KB", "GH_AW_SAFE_OUTPUTS", "GITHUB_PERSONAL_ACCESS_TOKEN", "GITHUB_REPOSITORY", "GITHUB_SERVER_URL", "HOME", "OPENAI_API_KEY", "PATH"]
           
           [mcp_servers.github]
-          user_agent = "test-assign-to-agent"
+          user_agent = "test-assign-to-agent-codex"
           startup_timeout_sec = 120
           tool_timeout_sec = 60
           command = "docker"
@@ -1237,7 +1237,7 @@ jobs:
               model: "",
               version: "",
               agent_version: "0.63.0",
-              workflow_name: "Test Assign to Agent",
+              workflow_name: "Test Assign to Agent Codex",
               experimental: true,
               supports_tools_allowlist: true,
               supports_http_transport: true,
@@ -1277,11 +1277,11 @@ jobs:
         env:
           CODEX_API_KEY: ${{ secrets.CODEX_API_KEY || secrets.OPENAI_API_KEY }}
           CODEX_HOME: /tmp/gh-aw/mcp-config
-          GH_AW_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_AW_GITHUB_TOKEN: ${{ secrets.CODEX_API_KEY }}
           GH_AW_MCP_CONFIG: /tmp/gh-aw/mcp-config/config.toml
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_SAFE_OUTPUTS: ${{ env.GH_AW_SAFE_OUTPUTS }}
-          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.CODEX_API_KEY }}
           GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
           OPENAI_API_KEY: ${{ secrets.CODEX_API_KEY || secrets.OPENAI_API_KEY }}
           RUST_LOG: trace,hyper_util=info,mio=info,reqwest=info,os_info=info,codex_otel=warn,codex_core=debug,ocodex_exec=debug
@@ -1396,9 +1396,8 @@ jobs:
             }
             await main();
         env:
-          GH_AW_SECRET_NAMES: 'CODEX_API_KEY,COPILOT_GITHUB_TOKEN,OPENAI_API_KEY'
+          GH_AW_SECRET_NAMES: 'CODEX_API_KEY,OPENAI_API_KEY'
           SECRET_CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
-          SECRET_COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           SECRET_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Upload Safe Outputs
         if: always()
@@ -3132,10 +3131,10 @@ jobs:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
           GH_AW_AGENT_DEFAULT: "codex"
           GH_AW_AGENT_MAX_COUNT: 5
-          GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_TOKEN: ${{ secrets.CODEX_API_KEY }}
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Codex"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.CODEX_API_KEY }}
           script: |
             const fs = require("fs");
             function loadAgentOutput() {
@@ -3580,9 +3579,9 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: 1
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Codex"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.CODEX_API_KEY }}
           script: |
             const fs = require("fs");
             function loadAgentOutput() {
@@ -3666,10 +3665,10 @@ jobs:
           GH_AW_COMMENT_ID: ${{ needs.activation.outputs.comment_id }}
           GH_AW_COMMENT_REPO: ${{ needs.activation.outputs.comment_repo }}
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Codex"
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.CODEX_API_KEY }}
           script: |
             const fs = require("fs");
             function loadAgentOutput() {
@@ -3854,7 +3853,7 @@ jobs:
       - name: Setup threat detection
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          WORKFLOW_NAME: "Test Assign to Agent"
+          WORKFLOW_NAME: "Test Assign to Agent Codex"
           WORKFLOW_DESCRIPTION: "Test workflow for assign_to_agent safe output feature"
         with:
           script: |
@@ -4078,9 +4077,9 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Codex"
         with:
-          github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.CODEX_API_KEY }}
           script: |
             async function main() {
               const fs = require("fs");

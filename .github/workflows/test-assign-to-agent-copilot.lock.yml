@@ -69,7 +69,7 @@
 #   - actions/upload-artifact@v5 (330a01c490aca151604b8cf639adc76d48f6c5d4)
 #     https://github.com/actions/upload-artifact/commit/330a01c490aca151604b8cf639adc76d48f6c5d4
 
-name: "Test Assign to Agent"
+name: "Test Assign to Agent Copilot"
 "on":
   issues:
     types:
@@ -90,7 +90,7 @@ permissions:
 concurrency:
   group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number }}"
 
-run-name: "Test Assign to Agent"
+run-name: "Test Assign to Agent Copilot"
 
 jobs:
   activation:
@@ -1251,7 +1251,7 @@ jobs:
               model: "",
               version: "",
               agent_version: "0.0.358",
-              workflow_name: "Test Assign to Agent",
+              workflow_name: "Test Assign to Agent Copilot",
               experimental: false,
               supports_tools_allowlist: true,
               supports_http_transport: true,
@@ -3743,7 +3743,7 @@ jobs:
           GH_AW_AGENT_DEFAULT: "copilot"
           GH_AW_AGENT_MAX_COUNT: 5
           GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Copilot"
         with:
           github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           script: |
@@ -4190,7 +4190,7 @@ jobs:
         env:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
           GH_AW_NOOP_MAX: 1
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Copilot"
         with:
           github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           script: |
@@ -4276,7 +4276,7 @@ jobs:
           GH_AW_COMMENT_ID: ${{ needs.activation.outputs.comment_id }}
           GH_AW_COMMENT_REPO: ${{ needs.activation.outputs.comment_repo }}
           GH_AW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Copilot"
           GH_AW_AGENT_CONCLUSION: ${{ needs.agent.result }}
         with:
           github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
@@ -4464,7 +4464,7 @@ jobs:
       - name: Setup threat detection
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          WORKFLOW_NAME: "Test Assign to Agent"
+          WORKFLOW_NAME: "Test Assign to Agent Copilot"
           WORKFLOW_DESCRIPTION: "Test workflow for assign_to_agent safe output feature"
         with:
           script: |
@@ -4700,7 +4700,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
-          GH_AW_WORKFLOW_NAME: "Test Assign to Agent"
+          GH_AW_WORKFLOW_NAME: "Test Assign to Agent Copilot"
         with:
           github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           script: |
