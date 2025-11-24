@@ -128,9 +128,8 @@ function filterAndRenderTasks() {
     }
     
     // Apply sort
-    // BUG: Sort logic is inverted for date
     if (currentSort === 'date') {
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     } else if (currentSort === 'priority') {
         const priorityOrder = { high: 1, medium: 2, low: 3 };
         filtered.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
