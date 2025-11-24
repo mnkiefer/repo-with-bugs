@@ -31,9 +31,10 @@ permissions:
 
 engine: copilot
 timeout-minutes: 5
+github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
 safe-outputs:
-  github-token: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+  github-token: ${{ secrets.GITHUB_TOKEN }}
   assign-to-agent:
     max: 5
     default-agent: copilot
