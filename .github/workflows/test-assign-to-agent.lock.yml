@@ -3685,6 +3685,24 @@ jobs:
                 }
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
+                try {
+                  core.debug(`Raw GraphQL error message: ${errorMessage}`);
+                  if (error && typeof error === "object") {
+                    const details = {};
+                    if (error.errors) details.errors = error.errors;
+                    if (error.response) details.response = error.response;
+                    if (error.data) details.data = error.data;
+                    if (Array.isArray(error.errors)) {
+                      details.compactMessages = error.errors.map(e => e.message).filter(Boolean);
+                    }
+                    const serialized = JSON.stringify(details, (_k, v) => v, 2);
+                    if (serialized && serialized !== '{}' ) {
+                      core.debug(`Raw GraphQL error details: ${serialized}`);
+                    }
+                  }
+                } catch (loggingErr) {
+                  core.debug(`Failed to serialize GraphQL error details: ${loggingErr instanceof Error ? loggingErr.message : String(loggingErr)}`);
+                }
                 if (
                   errorMessage.includes("Resource not accessible by personal access token") ||
                   errorMessage.includes("Resource not accessible by integration") ||
